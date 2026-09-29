@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 260" width="1200" height="260" role="img" aria-labelledby="t d">
+<title id="t">Safe by design</title><desc id="d">Stays on your computer, you approve the plan, stops at security checks, its own browser profile.</desc>
+<defs>
+<style>
+text{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+</style>
+<linearGradient id="path" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#7c9cff"/><stop offset=".5" stop-color="#2dd4bf"/><stop offset="1" stop-color="#4ade80"/></linearGradient>
+
+</defs>
+<rect x=".5" y=".5" width="1199" height="259" rx="24" fill="#0b0e14" stroke="#262c3a"/>
+<rect x="30.0" y="30" width="270.0" height="200" rx="18" fill="#131722" stroke="#262c3a"/>
+<circle cx="82.0" cy="82" r="28" fill="#7c9cff" fill-opacity=".14" stroke="#7c9cff" stroke-opacity=".35"/>
+<path d="M70.0 82 l12 -10 l12 10 M74.0 79 v13 h16 v-13" stroke="#7c9cff" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="54.0" y="150.0" font-size="18.5" font-weight="700" fill="#fff" text-anchor="start" >Stays on your computer</text>
+<text x="54.0" y="180.0" font-size="14.5" font-weight="400" fill="#9aa3b2" text-anchor="start" >The AI runs locally with</text>
+<text x="54.0" y="202.0" font-size="14.5" font-weight="400" fill="#9aa3b2" text-anchor="start" >Ollama. Nothing uploads.</text>
+<rect x="320.0" y="30" width="270.0" height="200" rx="18" fill="#131722" stroke="#262c3a"/>
+<circle cx="372.0" cy="82" r="28" fill="#47c1d4" fill-opacity=".14" stroke="#47c1d4" stroke-opacity=".35"/>
+<circle cx="372.0" cy="82" r="12" stroke="#47c1d4" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M367.0 82 l3.5 3.5 l7 -7" stroke="#47c1d4" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="344.0" y="150.0" font-size="18.5" font-weight="700" fill="#fff" text-anchor="start" >You approve the plan</text>
+<text x="344.0" y="180.0" font-size="14.5" font-weight="400" fill="#9aa3b2" text-anchor="start" >Nothing runs on its own</text>
+<text x="344.0" y="202.0" font-size="14.5" font-weight="400" fill="#9aa3b2" text-anchor="start" >until you say yes.</text>
+<rect x="610.0" y="30" width="270.0" height="200" rx="18" fill="#131722" stroke="#262c3a"/>
+<circle cx="662.0" cy="82" r="28" fill="#37d7aa" fill-opacity=".14" stroke="#37d7aa" stroke-opacity=".35"/>
+<polygon points="673.1,86.6 666.6,93.1 657.4,93.1 650.9,86.6 650.9,77.4 657.4,70.9 666.6,70.9 673.1,77.4" stroke="#37d7aa" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M657.0 82 h10" stroke="#37d7aa" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="634.0" y="150.0" font-size="18.5" font-weight="700" fill="#fff" text-anchor="start" >Stops at security checks</text>
+<text x="634.0" y="180.0" font-size="14.5" font-weight="400" fill="#9aa3b2" text-anchor="start" >A CAPTCHA or login page</text>
+<text x="634.0" y="202.0" font-size="14.5" font-weight="400" fill="#9aa3b2" text-anchor="start" >stops the run. You decide.</text>
+<rect x="900.0" y="30" width="270.0" height="200" rx="18" fill="#131722" stroke="#262c3a"/>
+<circle cx="952.0" cy="82" r="28" fill="#4ade80" fill-opacity=".14" stroke="#4ade80" stroke-opacity=".35"/>
+<rect x="939.0" y="71" width="26" height="22" rx="4" stroke="#4ade80" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M939.0 78 h26" stroke="#4ade80" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="944.0" cy="74.5" r="1.2" fill="#4ade80"/><circle cx="948.0" cy="74.5" r="1.2" fill="#4ade80"/>
+<text x="924.0" y="150.0" font-size="18.5" font-weight="700" fill="#fff" text-anchor="start" >Its own browser profile</text>
+<text x="924.0" y="180.0" font-size="14.5" font-weight="400" fill="#9aa3b2" text-anchor="start" >Your everyday Chrome</text>
+<text x="924.0" y="202.0" font-size="14.5" font-weight="400" fill="#9aa3b2" text-anchor="start" >stays untouched.</text>
+</svg>

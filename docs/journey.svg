@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 580" width="1200" height="580" role="img" aria-labelledby="t d">
+<title id="t">Example journey from coding to living in nature</title><desc id="d">Ten steps rising from you to your opposite: coding, a calmer desk, winding down after work, house plants, weekend walks, a balcony garden, cooking with fresh herbs, local markets, quiet mornings, living close to nature. Five days each, about seven weeks.</desc>
+<defs>
+<style>
+text{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+</style>
+<linearGradient id="path" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#7c9cff"/><stop offset=".5" stop-color="#2dd4bf"/><stop offset="1" stop-color="#4ade80"/></linearGradient>
+<linearGradient id="jp" x1="170" y1="0" x2="1120" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#7c9cff"/><stop offset=".5" stop-color="#2dd4bf"/><stop offset="1" stop-color="#4ade80"/></linearGradient>
+<linearGradient id="ja" x1="0" y1="190" x2="0" y2="430" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#4ade80" stop-opacity=".18"/><stop offset="1" stop-color="#7c9cff" stop-opacity=".02"/></linearGradient>
+</defs>
+<rect x=".5" y=".5" width="1199" height="579" rx="24" fill="#0b0e14" stroke="#262c3a"/>
+<text x="56.0" y="66.0" font-size="12" font-weight="800" fill="#2dd4bf" text-anchor="start" letter-spacing="1.8">EXAMPLE JOURNEY</text>
+<text x="56.0" y="104.0" font-size="32" font-weight="800" fill="#fff" text-anchor="start" >From coding to living in nature</text>
+<text x="1144.0" y="104.0" font-size="17" font-weight="500" fill="#9aa3b2" text-anchor="end" >10 steps × 5 days ≈ 7 weeks</text>
+<line x1="150" y1="190" x2="1140" y2="190" stroke="#262c3a" stroke-dasharray="3 6"/>
+<text x="136.0" y="194.0" font-size="12" font-weight="700" fill="#4ade80" text-anchor="end" >your opposite</text>
+<line x1="150" y1="430" x2="1140" y2="430" stroke="#262c3a" stroke-dasharray="3 6"/>
+<text x="136.0" y="434.0" font-size="12" font-weight="700" fill="#7c9cff" text-anchor="end" >you</text>
+<path d="M170.0,430.0 C187.6,426.0 240.4,415.2 275.6,406.0 C310.7,396.8 345.9,384.4 381.1,374.8 C416.3,365.2 451.5,356.8 486.7,348.4 C521.9,340.0 557.0,333.2 592.2,324.4 C627.4,315.6 662.6,304.4 697.8,295.6 C733.0,286.8 768.1,280.0 803.3,271.6 C838.5,263.2 873.7,254.4 908.9,245.2 C944.1,236.0 979.3,225.6 1014.4,216.4 C1049.6,207.2 1102.4,194.4 1120.0,190.0 L1120,430 L170,430 Z" fill="url(#ja)"/>
+<path d="M170.0,430.0 C187.6,426.0 240.4,415.2 275.6,406.0 C310.7,396.8 345.9,384.4 381.1,374.8 C416.3,365.2 451.5,356.8 486.7,348.4 C521.9,340.0 557.0,333.2 592.2,324.4 C627.4,315.6 662.6,304.4 697.8,295.6 C733.0,286.8 768.1,280.0 803.3,271.6 C838.5,263.2 873.7,254.4 908.9,245.2 C944.1,236.0 979.3,225.6 1014.4,216.4 C1049.6,207.2 1102.4,194.4 1120.0,190.0" fill="none" stroke="url(#jp)" stroke-width="4.5" stroke-linecap="round"/>
+<circle cx="170.0" cy="430.0" r="14" fill="#7c9cff" stroke="#0b0e14" stroke-width="4"/>
+<text x="170.0" y="434.5" font-size="12" font-weight="800" fill="#0b0e14" text-anchor="middle" >1</text>
+<text x="170.0" y="386.0" font-size="14" font-weight="600" fill="#eef1f6" text-anchor="middle" >Coding &amp;</text>
+<text x="170.0" y="404.0" font-size="14" font-weight="600" fill="#eef1f6" text-anchor="middle" >side projects</text>
+<circle cx="275.6" cy="406.0" r="14" fill="#6aa8f1" stroke="#0b0e14" stroke-width="4"/>
+<text x="275.6" y="410.5" font-size="12" font-weight="800" fill="#0b0e14" text-anchor="middle" >2</text>
+<text x="275.6" y="444.0" font-size="14" font-weight="600" fill="#eef1f6" text-anchor="middle" >A calmer</text>
+<text x="275.6" y="462.0" font-size="14" font-weight="600" fill="#eef1f6" text-anchor="middle" >desk setup</text>
+<circle cx="381.1" cy="374.8" r="14" fill="#59b5e3" stroke="#0b0e14" stroke-width="4"/>
+<text x="381.1" y="379.3" font-size="12" font-weight="800" fill="#0b0e14" text-anchor="middle" >3</text>
+<text x="381.1" y="330.8" font-size="14" font-weight="600" fill="#eef1f6" text-anchor="middle" >Winding down</text>
+<text x="381.1" y="348.8" font-size="14" font-weight="600" fill="#eef1f6" text-anchor="middle" >after work</text>
+<circle cx="486.7" cy="348.4" r="14" fill="#47c1d4" stroke="#0b0e14" stroke-width="4"/>
+<text x="486.7" y="352.9" font-size="12" font-weight="800" fill="#0b0e14" text-anchor="middle" >4</text>
+<text x="486.7" y="386.4" font-size="14" font-weight="600" fill="#eef1f6" text-anchor="middle" >First house</text>
+<text x="486.7" y="404.4" font-size="14" font-weight="600" fill="#eef1f6" text-anchor="middle" >plants</text>
+<circle cx="592.2" cy="324.4" r="14" fill="#36cec6" stroke="#0b0e14" stroke-width="4"/>
+<text x="592.2" y="328.9" font-size="12" font-weight="800" fill="#0b0e14" text-anchor="middle" >5</text>
+<text x="592.2" y="280.4" font-size="14" font-weight="600" fill="#eef1f6" text-anchor="middle" >Weekend</text>
+<text x="592.2" y="298.4" font-size="14" font-weight="600" fill="#eef1f6" text-anchor="middle" >walks</text>
+<circle cx="697.8" cy="295.6" r="14" fill="#30d5b8" stroke="#0b0e14" stroke-width="4"/>
+<text x="697.8" y="300.1" font-size="12" font-weight="800" fill="#0b0e14" text-anchor="middle" >6</text>
+<text x="697.8" y="333.6" font-size="14" font-weight="600" fill="#eef1f6" text-anchor="middle" >A balcony</text>
+<text x="697.8" y="351.6" font-size="14" font-weight="600" fill="#eef1f6" text-anchor="middle" >garden</text>
+<circle cx="803.3" cy="271.6" r="14" fill="#37d7aa" stroke="#0b0e14" stroke-width="4"/>
+<text x="803.3" y="276.1" font-size="12" font-weight="800" fill="#0b0e14" text-anchor="middle" >7</text>
+<text x="803.3" y="227.6" font-size="14" font-weight="600" fill="#eef1f6" text-anchor="middle" >Cooking with</text>
+<text x="803.3" y="245.6" font-size="14" font-weight="600" fill="#eef1f6" text-anchor="middle" >fresh herbs</text>
+<circle cx="908.9" cy="245.2" r="14" fill="#3dda9c" stroke="#0b0e14" stroke-width="4"/>
+<text x="908.9" y="249.7" font-size="12" font-weight="800" fill="#0b0e14" text-anchor="middle" >8</text>
+<text x="908.9" y="283.2" font-size="14" font-weight="600" fill="#eef1f6" text-anchor="middle" >Local markets</text>
+<text x="908.9" y="301.2" font-size="14" font-weight="600" fill="#eef1f6" text-anchor="middle" >&amp; crafts</text>
+<circle cx="1014.4" cy="216.4" r="14" fill="#44dc8e" stroke="#0b0e14" stroke-width="4"/>
+<text x="1014.4" y="220.9" font-size="12" font-weight="800" fill="#0b0e14" text-anchor="middle" >9</text>
+<text x="1014.4" y="172.4" font-size="14" font-weight="600" fill="#eef1f6" text-anchor="middle" >Quiet</text>
+<text x="1014.4" y="190.4" font-size="14" font-weight="600" fill="#eef1f6" text-anchor="middle" >mornings</text>
+<circle cx="1120.0" cy="190.0" r="14" fill="#4ade80" stroke="#0b0e14" stroke-width="4"/>
+<text x="1120.0" y="194.5" font-size="12" font-weight="800" fill="#0b0e14" text-anchor="middle" >10</text>
+<text x="1120.0" y="228.0" font-size="14" font-weight="600" fill="#eef1f6" text-anchor="middle" >Living close</text>
+<text x="1120.0" y="246.0" font-size="14" font-weight="600" fill="#eef1f6" text-anchor="middle" >to nature</text>
+<line x1="170" y1="500" x2="1120" y2="500" stroke="#262c3a" stroke-width="2"/>
+<line x1="170.0" y1="495" x2="170.0" y2="505" stroke="#6b7485" stroke-width="2"/>
+<text x="170.0" y="526.0" font-size="12" font-weight="500" fill="#6b7485" text-anchor="middle" >days 1–5</text>
+<line x1="275.6" y1="495" x2="275.6" y2="505" stroke="#6b7485" stroke-width="2"/>
+<text x="275.6" y="526.0" font-size="12" font-weight="500" fill="#6b7485" text-anchor="middle" >days 6–10</text>
+<line x1="381.1" y1="495" x2="381.1" y2="505" stroke="#6b7485" stroke-width="2"/>
+<text x="381.1" y="526.0" font-size="12" font-weight="500" fill="#6b7485" text-anchor="middle" >days 11–15</text>
+<line x1="486.7" y1="495" x2="486.7" y2="505" stroke="#6b7485" stroke-width="2"/>
+<text x="486.7" y="526.0" font-size="12" font-weight="500" fill="#6b7485" text-anchor="middle" >days 16–20</text>
+<line x1="592.2" y1="495" x2="592.2" y2="505" stroke="#6b7485" stroke-width="2"/>
+<text x="592.2" y="526.0" font-size="12" font-weight="500" fill="#6b7485" text-anchor="middle" >days 21–25</text>
+<line x1="697.8" y1="495" x2="697.8" y2="505" stroke="#6b7485" stroke-width="2"/>
+<text x="697.8" y="526.0" font-size="12" font-weight="500" fill="#6b7485" text-anchor="middle" >days 26–30</text>
+<line x1="803.3" y1="495" x2="803.3" y2="505" stroke="#6b7485" stroke-width="2"/>
+<text x="803.3" y="526.0" font-size="12" font-weight="500" fill="#6b7485" text-anchor="middle" >days 31–35</text>
+<line x1="908.9" y1="495" x2="908.9" y2="505" stroke="#6b7485" stroke-width="2"/>
+<text x="908.9" y="526.0" font-size="12" font-weight="500" fill="#6b7485" text-anchor="middle" >days 36–40</text>
+<line x1="1014.4" y1="495" x2="1014.4" y2="505" stroke="#6b7485" stroke-width="2"/>
+<text x="1014.4" y="526.0" font-size="12" font-weight="500" fill="#6b7485" text-anchor="middle" >days 41–45</text>
+<line x1="1120.0" y1="495" x2="1120.0" y2="505" stroke="#6b7485" stroke-width="2"/>
+<text x="1120.0" y="526.0" font-size="12" font-weight="500" fill="#6b7485" text-anchor="middle" >days 46–50</text>
+<text x="56.0" y="552.0" font-size="13.5" font-weight="400" fill="#9aa3b2" text-anchor="start" >Each step shares one thing with the step before it and adds one new thing. Every day of a step is worded differently.</text>
+</svg>

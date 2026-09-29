@@ -1,207 +1,205 @@
-# anti-persona
+<p align="center">
+  <img src="docs/hero.svg" alt="anti-persona: meet your opposite, then drift toward it one quiet day at a time" width="100%">
+</p>
 
-[![ci](https://github.com/tonoyandev/web3lesson/actions/workflows/ci.yml/badge.svg)](https://github.com/tonoyandev/web3lesson/actions/workflows/ci.yml)
-![python](https://img.shields.io/badge/python-3.10%2B-blue)
-![license](https://img.shields.io/badge/license-MIT-green)
+<p align="center">
+  <a href="https://github.com/tonoyandev/web3lesson/releases/latest"><img src="docs/download-mac.svg" alt="Download for Mac (Apple Silicon)" height="56"></a>
+  &nbsp;
+  <a href="https://github.com/tonoyandev/web3lesson/releases/latest"><img src="docs/download-windows.svg" alt="Download for Windows" height="56"></a>
+</p>
 
-**Part 1** is all you need to use the tool. **Part 2** explains how it works
-inside, including the math.
+<p align="center">
+  <a href="https://github.com/tonoyandev/web3lesson/releases/latest"><img src="https://img.shields.io/github/v/release/tonoyandev/web3lesson?label=version&color=2dd4bf" alt="latest version"></a>
+  <a href="https://github.com/tonoyandev/web3lesson/actions/workflows/ci.yml"><img src="https://github.com/tonoyandev/web3lesson/actions/workflows/ci.yml/badge.svg" alt="ci"></a>
+  <img src="https://img.shields.io/badge/runs-100%25%20locally-4ade80" alt="runs 100% locally">
+  <img src="https://img.shields.io/badge/license-MIT-7c9cff" alt="MIT license">
+</p>
+
+<p align="center">
+  <b>Your browser history and AI chats say who you are.</b><br>
+  anti-persona reads them on your own computer, finds your opposite,<br>
+  and walks you there in small, natural steps.
+</p>
 
 ---
 
-# Part 1. Quick guide
+## See it in action
 
-## What it does
+<p align="center">
+  <img src="docs/app.svg" alt="The anti-persona app: eight steps on the left, the Run a day card and live output on the right" width="100%">
+</p>
+<p align="center"><sub>The app runs in your browser. Every step is a button. Illustration with demo data.</sub></p>
 
-Your browser history and AI chats say a lot about you. This tool reads them on
-your own computer and asks a local AI model two questions: *who is this
-person?* and *who is their opposite?*
+## How it works
 
-Then it plans a slow trip from you to your opposite, in small steps. For
-example: *coding → how to relax after work → house plants → gardening → living
-in nature*.
+<p align="center">
+  <img src="docs/how.svg" alt="Research, Plan, Run, Measure" width="100%">
+</p>
 
-Once you approve the plan, it opens Chrome once a day and browses like a person
-at that step would. It runs Google searches, watches YouTube videos, and asks
-ChatGPT and Claude questions. It also measures whether the change is really
-happening.
+1. **Research.** A local AI reads a summary of your history and chats and describes two people: you, and your opposite.
+2. **Plan.** It draws a path between them in 10 small steps. Each step shares something with the one before, so nothing feels sudden.
+3. **Run.** Once you approve, it lives one day of the path at a time in its own Chrome window. It searches Google, watches YouTube, and asks ChatGPT and Claude questions, like a person at that step would.
+4. **Measure.** It checks that the path is smooth and that the change really shows up.
 
-Nothing leaves your computer. The AI model runs locally with
-[Ollama](https://ollama.com).
+## One step at a time
 
-## Easiest: download the app
+<p align="center">
+  <img src="docs/journey.svg" alt="Example journey from coding to living in nature in 10 steps over about 7 weeks" width="100%">
+</p>
 
-Get it from the [latest release](https://github.com/tonoyandev/web3lesson/releases/latest):
+Real people change slowly, so the app does too. Each step lasts 5 days and is
+worded a little differently every day. The whole trip takes about seven weeks.
+You can make it faster or slower.
 
-- **Mac with Apple Silicon (M1 or newer):** `anti-persona-macos-apple-silicon.zip`
-- **Windows:** `anti-persona-windows-x64.zip`
+Every plan is made for the person who runs it. A programmer, a teacher and a
+nurse each get their own path. Want a destination of your own instead of the
+mirror image? Type it in, for example *"house plants, gardening, living in nature"*.
 
-You don't need Python. You still need:
+## Get started
 
-- [Google Chrome](https://www.google.com/chrome/)
-- [Ollama](https://ollama.com/download), opened at least once so it runs in the background
-- about 18 GB of free disk space for the default model; smaller models are listed below
+**1. Install two free apps.**
+[Google Chrome](https://www.google.com/chrome/) and [Ollama](https://ollama.com/download).
+Open Ollama once, so it keeps running in the background.
 
-**On a Mac:** unzip, then drag `anti-persona.app` into **Applications**. The
-app is not signed, so the first time macOS blocks it. Try to open it once, then
-go to **System Settings → Privacy & Security** and click **Open Anyway**.
+**2. Download anti-persona** for your computer from the
+[latest release](https://github.com/tonoyandev/web3lesson/releases/latest), then unzip it.
 
-**On Windows:** unzip, open the `anti-persona` folder and double-click
-`anti-persona.exe`. If "Windows protected your PC" appears, click **More info**,
-then **Run anyway**. Keep the black window open while you use the app.
+| Your computer | File |
+|---|---|
+| Mac with Apple Silicon (M1 or newer) | `anti-persona-macos-apple-silicon.zip` |
+| Windows 10 or 11, 64-bit | `anti-persona-windows-x64.zip` |
 
-The app opens a page in your browser with every step as a button. The first
-step downloads the models for you. Press **Quit** on the page when you are done.
+**3. Open it and follow the buttons.** The first step downloads the AI models
+for you. You need about 18 GB of free space for the default model.
 
-Your data is kept in `~/Library/Application Support/anti-persona` on a Mac and
-in `%APPDATA%\anti-persona` on Windows.
+<details>
+<summary><b>First launch on a Mac</b></summary>
 
-Intel Macs and Linux: use the source version below.
+1. Drag `anti-persona.app` into **Applications**.
+2. Open it once. macOS blocks it, because the app is not signed.
+3. Go to **System Settings → Privacy & Security** and click **Open Anyway**.
 
-## Or run from source
+Your data is kept in `~/Library/Application Support/anti-persona`.
+</details>
 
-You need:
+<details>
+<summary><b>First launch on Windows</b></summary>
 
-- Python 3.10 or newer
-- Google Chrome
-- [Ollama](https://ollama.com)
-- About 18 GB of free disk space for the default model. A smaller model works too, see below.
+1. Open the `anti-persona` folder and double-click `anti-persona.exe`.
+2. If "Windows protected your PC" appears, click **More info**, then **Run anyway**.
+3. Keep the black window open while you use the app.
 
-### Install
+Your data is kept in `%APPDATA%\anti-persona`.
+</details>
+
+<details>
+<summary><b>Intel Mac, Linux, or you prefer the source code</b></summary>
+
+You need Python 3.10 or newer, Google Chrome and Ollama.
 
 ```bash
 git clone https://github.com/tonoyandev/web3lesson.git anti-persona
 cd anti-persona
 pip3 install -r requirements.txt
-ollama pull qwen3.8
-ollama pull nomic-embed-text
 ```
 
-### Start the app from source
+Then start the app: double-click `Start.command` on a Mac or `Start.bat` on
+Windows, or run `python3 app.py`. On Linux, `python3 app.py` works too.
 
-After installing, double-click:
+The first time on a Mac, right-click `Start.command` and choose **Open**.
 
-- **macOS:** `Start.command`
-- **Windows:** `Start.bat`
-
-A page opens in your browser with every step as a button, in order. Each step
-shows whether it is done, and the output of each button appears at the bottom.
-It also checks your setup, and missing models can be downloaded with one click.
-
-The first time on macOS, right-click `Start.command` and choose **Open**,
-because the file is not signed. You can also start the app from a terminal with
-`python3 app.py`.
-
-The app only listens on your own computer and uses a secret address that
-changes every time you start it.
-
-### Or use the terminal
-
-**1. Learn who you are.** The tool first shows what it will read and asks for
-permission. Then it opens a report in your browser.
+Prefer the terminal? Every button is a plain command:
 
 ```bash
-python3 persona.py
+python3 persona.py                  # 1. learn who you are
+python3 anti.py plan                # 2. make the plan (slow)
+python3 anti.py approve             # 3. read and approve it
+python3 anti.py login               # 4. log in once, yourself
+python3 anti.py run --dry-run       # 5. see what today would do
+python3 anti.py run                 #    and do it
+python3 anti.py metrics --judge     # 6. check progress
+python3 anti.py schedule --at 20:00 # 7. run it every day
 ```
 
-**2. Make the plan.** This is slow. Each attempt takes about 20 minutes with the
-default model.
+When you run from source, your data stays next to the code in `out/` and `state/`.
+</details>
 
-```bash
-python3 anti.py plan
-```
+## Safe by design
 
-Want a specific destination instead of the mirror image? Tell it:
+<p align="center">
+  <img src="docs/trust.svg" alt="Stays on your computer, you approve the plan, stops at security checks, its own browser profile" width="100%">
+</p>
 
-```bash
-python3 anti.py plan --goal "house plants, gardening, living in nature"
-```
+Please read before you start:
 
-**3. Read and approve the plan.** Nothing runs on its own until you do this.
+- **Only use it on your own computer and your own accounts.**
+- **ChatGPT and Claude do not allow bots on their websites.** Your accounts could be flagged. You can switch them off in step 5 and use only Google and YouTube.
+- **It never tries to get past a security check.** A CAPTCHA or a login page stops the run and leaves it to you.
+- **It uses its own Chrome profile.** Your everyday Chrome and its history stay untouched.
 
-```bash
-python3 anti.py approve
-```
+## Questions
 
-**4. Log in once.** A separate Chrome window opens. Log in to Google, ChatGPT
-and Claude yourself. The tool never sees your passwords.
+<details>
+<summary><b>How long does it take?</b></summary>
 
-```bash
-python3 anti.py login
-```
+About seven weeks with the default plan of 10 steps × 5 days. At most one day
+runs every 12 hours, and a day takes 10–15 minutes. You can change the days per
+step in step 2 of the app, and your approval and progress are kept.
+</details>
 
-**5. Run one day.** First see what it would do, then run it for real.
+<details>
+<summary><b>My computer is small. Which AI model should I use?</b></summary>
 
-```bash
-python3 anti.py run --dry-run
-```
-
-```bash
-python3 anti.py run
-```
-
-**6. Check progress.** This opens a dashboard with charts.
-
-```bash
-python3 anti.py metrics --judge
-```
-
-**7. Optional: make it automatic.** From now on it runs one day every evening.
-
-```bash
-python3 anti.py schedule --at 20:00
-```
-
-## How long it takes
-
-The default plan has 10 steps, and each step lasts 5 days. That is about seven
-weeks. Real people change slowly, so a slow change looks natural. You can make
-each step shorter or longer:
-
-```bash
-python3 anti.py plan --check --days-per-stage 3
-```
-
-## Smaller computer?
-
-Use a smaller model. Add `--model` to the commands:
+Pick one in the app's first step:
 
 | Model | Download size | Speed and quality |
 |---|---|---|
-| `qwen3.8` (default) | 17 GB | best plans, slowest |
+| `qwen3.8` (default) | 17 GB | best plans, slowest: about 20 minutes per plan attempt |
 | `qwen3:14b` | 9 GB | good balance |
 | `qwen3:8b` | 5 GB | fastest, needs more retries |
+</details>
 
-```bash
-python3 anti.py plan --model qwen3:8b
-```
+<details>
+<summary><b>What exactly does it read?</b></summary>
 
-## Please read before you use it
+Chrome history, Safari history on a Mac, Claude Code chats, and a ChatGPT data
+export if you add one. It never changes these files. The AI never sees your raw
+history either, only a summary: top sites, page titles, searches, active hours,
+keywords, and 30 short prompt samples. The app shows every file and its size
+before it starts, and waits for your yes.
+</details>
 
-- **Only use it on your own computer and your own accounts.**
-- **ChatGPT and Claude do not allow bots in their websites.** Your accounts
-  could be flagged. To skip them, add `--only google,youtube` to `run`.
-- **The tool never tricks security checks.** If a website shows a CAPTCHA or a
-  login page, it stops the run and leaves it to you.
-- **It uses its own Chrome profile.** Your normal Chrome and its history stay
-  untouched.
+<details>
+<summary><b>Does anything leave my computer?</b></summary>
 
-## Stop or start over
+No. The AI runs on your computer with Ollama. The only things that go online
+are the searches, videos and chats of the plan itself, and you approve those
+first. The app listens only on your own computer, behind a secret address that
+changes every time you open it.
+</details>
 
-Stop the daily runs:
+<details>
+<summary><b>How do I stop, or start over?</b></summary>
 
-```bash
-python3 anti.py schedule --remove
-```
-
-To start over completely, also delete the `out/` and `state/` folders and
-`~/.anti/`.
+Turn off the daily run in step 7, or press **Quit**. To start over, delete your
+data folder (see "First launch" above) and `~/.anti/`, which holds the app's
+own Chrome profile.
+</details>
 
 ---
 
-# Part 2. How it works
+## Under the hood
 
-## The pipeline
+<p align="center">
+  <img src="docs/dashboard.svg" alt="Progress dashboard with a scorecard and a chart of planned versus observed position. Demo data." width="100%">
+</p>
+<p align="center"><sub>The progress dashboard. Illustration with demo data.</sub></p>
+
+The sections below are for the curious and for contributors. You don't need
+them to use the app.
+
+<details>
+<summary><b>The pipeline</b></summary>
 
 ```mermaid
 flowchart TB
@@ -229,8 +227,10 @@ flowchart TB
   R --> AP
   LOG --> M
 ```
+</details>
 
-## 1. Research
+<details>
+<summary><b>Research</b></summary>
 
 `persona.py` reads these sources and never changes them:
 
@@ -246,8 +246,10 @@ keywords, and 30 short prompt samples. Only that summary goes to the model.
 The prompt tells the model three things. Browser history describes your whole
 life, while AI chats mostly describe your job. Every claim needs evidence from
 the data. The opposite must flip each trait one to one.
+</details>
 
-## 2. Planning
+<details>
+<summary><b>Planning</b></summary>
 
 The model writes all stages in one go. It sees the whole trip at once, which
 helps keep an even pace. Two rules guide it:
@@ -260,8 +262,10 @@ helps keep an even pace. Two rules guide it:
 The tool then checks the plan with the measurements below. If a check fails, it
 tells the model exactly what went wrong, for example "stage 3 sits at 49% of the
 way, target 22%". It tries up to 3 times and keeps the best plan.
+</details>
 
-## 3. The math
+<details>
+<summary><b>The math</b></summary>
 
 Every text is turned into a vector with `nomic-embed-text`. The persona's
 interests and the opposite's interests are two points. The line between them is
@@ -279,7 +283,7 @@ This is the projection of `e` onto the line from `p` to `a`. The result is then
 rescaled, so that your own interest phrases average 0 and the opposite's
 average 1.
 
-### Plan checks
+**Plan checks**
 
 | Check | What it means | Target |
 |---|---|---|
@@ -293,7 +297,7 @@ alike to an embedding model. Neighbours score above 0.8 even in a bad plan, so a
 fixed threshold would never fail. Instead, neighbours must be clearly closer
 than the start is to the finish.
 
-### Run checks
+**Run checks**
 
 | Check | What it means | Target |
 |---|---|---|
@@ -306,8 +310,10 @@ than the start is to the finish.
 barely changes, and a model gives slightly different answers every time. That
 noise is bigger than ten days of real drift. The judge looks only at the
 automation profile, so it measures just the change the tool made.
+</details>
 
-## 4. Pacing
+<details>
+<summary><b>Pacing</b></summary>
 
 - Day 1 of a stage uses the plan's own actions.
 - Every later day, the model rewords the stage once. The topic stays the same,
@@ -320,8 +326,10 @@ automation profile, so it measures just the change the tool made.
 A Google account that is logged in to both your normal browser and the
 automation profile sees both. The change only looks complete once your own
 habits change too.
+</details>
 
-## 5. State and safety details
+<details>
+<summary><b>State and safety details</b></summary>
 
 - **The log is the progress.** `state/log.jsonl` records every action. A run
   that stops halfway continues where it stopped, and it never repeats a
@@ -338,82 +346,21 @@ habits change too.
 - **Untrusted text.** Page titles come from websites. They are passed to the
   model as quoted data, with an instruction to ignore any commands inside. Both
   HTML reports escape every value, so a bad page title cannot run code.
+- **The app's local page.** It listens on `127.0.0.1` only. Every request needs
+  a token that is new on each launch and a `127.0.0.1` or `localhost` Host
+  header, which keeps out other websites, DNS rebinding and other users of the
+  same computer. Buttons map to a fixed list of commands with checked values,
+  never a shell.
 - **About bot detection.** Chrome starts without the "controlled by automated
   software" banner and without the `navigator.webdriver` flag. Nothing else is
   done: no fingerprint spoofing, no proxies, no CAPTCHA solving.
 - **Remote model warning.** If `--host` points to another computer, the tool
   warns you, because your summary would then leave your machine.
 - **Permissions.** `~/.anti` holds your logins and is set to `chmod 700`.
+</details>
 
-## Files it writes
-
-| Path | What is inside |
-|---|---|
-| `out/summary.json` | the research summary |
-| `out/persona.json` | you and your opposite |
-| `out/report.html` | research dashboard |
-| `out/transition.html` | progress dashboard |
-| `state/roadmap.json` | the plan and its scores; old plans are kept as `roadmap-<id>.json` |
-| `state/log.jsonl` | every action and its result |
-| `state/variants.json` | the daily rewordings |
-| `state/metrics.jsonl` | one line per measurement |
-| `~/.anti/profile/` | the automation Chrome profile |
-
-`out/` and `state/` hold personal data and are git-ignored.
-
-## All commands
-
-### `persona.py`
-
-| Flag | What it does |
-|---|---|
-| `--yes` | skip the permission question |
-| `--extra DIR` | add a ChatGPT data export |
-| `--chrome-history FILE` | add another Chrome profile; can be repeated |
-| `--model NAME` | Ollama model; default `qwen3.8:latest` |
-| `--host URL` | Ollama address; default `http://localhost:11434` |
-| `--lang LANG` | language of the report; default English |
-| `--no-llm` | only statistics and charts |
-| `--out DIR` | output folder; default `out/` next to the script |
-| `--selftest` | run the built-in checks |
-
-### `anti.py`
-
-| Command | What it does |
-|---|---|
-| `plan` | make a plan; `--stages N` (default 10), `--days-per-stage N` (default 5), `--goal "a, b"`, `--attempts N` |
-| `plan --check` | re-score a plan you edited by hand; can also change `--days-per-stage` |
-| `approve` | review and approve the plan |
-| `login` | open the automation profile to log in |
-| `run` | run the next day; `--dry-run`, `--only google,youtube`, `--stage K`, `--all` (demo), `--fast` (testing), `--yes`, `--force` |
-| `metrics` | measure progress; `--judge` adds the independent check |
-| `daily` | what the scheduler runs: `run --yes`, then `metrics --judge` |
-| `schedule` | run daily at `--at HH:MM`; `--remove` to stop |
-| `selftest` | run the built-in checks |
-
-### `browse.py`
-
-Runs one site on its own. It is useful for fixing a site after a redesign:
-
-```bash
-python3 browse.py chatgpt "ping" --fast
-```
-
-## Platforms
-
-| | macOS | Linux | Windows |
-|---|---|---|---|
-| Chrome history | ✅ | ✅ | ✅ |
-| Safari history | ✅ (needs Full Disk Access) | – | – |
-| Browser automation | ✅ | ✅ | ✅ |
-| `schedule` | ✅ launchd | prints a cron line | ✅ Task Scheduler |
-| The app from source (`Start.command` / `Start.bat`) | ✅ | ✅ `python3 app.py` | ✅ |
-| Packaged app download | ✅ Apple Silicon | – | ✅ x64 |
-
-It is built and tested on macOS. Linux and Windows should work but are less
-tested.
-
-## The packaged app
+<details>
+<summary><b>The packaged app</b></summary>
 
 The download is `app.py` frozen with [PyInstaller](https://pyinstaller.org),
 together with Python and Playwright. It drives the Chrome you installed, so no
@@ -447,36 +394,121 @@ pyinstaller --noconfirm --windowed --name anti-persona --hidden-import browse ap
 ```
 
 On Windows, use `--console` instead of `--windowed`.
+</details>
 
-## Troubleshooting
+<details>
+<summary><b>Files it writes</b></summary>
 
-- **macOS says `Start.command` cannot be opened.** Right-click it and choose
-  Open. If it says "permission denied", run `chmod +x Start.command` once.
+| Path | What is inside |
+|---|---|
+| `out/summary.json` | the research summary |
+| `out/persona.json` | you and your opposite |
+| `out/report.html` | research dashboard |
+| `out/transition.html` | progress dashboard |
+| `state/roadmap.json` | the plan and its scores; old plans are kept as `roadmap-<id>.json` |
+| `state/log.jsonl` | every action and its result |
+| `state/variants.json` | the daily rewordings |
+| `state/metrics.jsonl` | one line per measurement |
+| `~/.anti/profile/` | the app's own Chrome profile |
+
+`out/` and `state/` live next to the code when you run from source, and in the
+user data folder in the packaged app. They hold personal data and are
+git-ignored.
+</details>
+
+<details>
+<summary><b>All commands</b></summary>
+
+**`persona.py`**
+
+| Flag | What it does |
+|---|---|
+| `--yes` | skip the permission question |
+| `--extra DIR` | add a ChatGPT data export |
+| `--chrome-history FILE` | add another Chrome profile; can be repeated |
+| `--model NAME` | Ollama model; default `qwen3.8:latest` |
+| `--host URL` | Ollama address; default `http://localhost:11434` |
+| `--lang LANG` | language of the report; default English |
+| `--no-llm` | only statistics and charts |
+| `--out DIR` | output folder; default `out/` in the data folder |
+| `--selftest` | run the built-in checks |
+
+**`anti.py`**
+
+| Command | What it does |
+|---|---|
+| `plan` | make a plan; `--stages N` (default 10), `--days-per-stage N` (default 5), `--goal "a, b"`, `--attempts N` |
+| `plan --check` | re-score a plan you edited by hand; can also change `--days-per-stage` |
+| `approve` | review and approve the plan |
+| `login` | open the app's Chrome profile to log in |
+| `run` | run the next day; `--dry-run`, `--only google,youtube`, `--stage K`, `--all` (demo), `--fast` (testing), `--yes`, `--force` |
+| `metrics` | measure progress; `--judge` adds the independent check |
+| `pull` | download `--model` through Ollama |
+| `daily` | what the scheduler runs: `run --yes`, then `metrics --judge` |
+| `schedule` | run daily at `--at HH:MM`; `--remove` to stop |
+| `selftest` | run the built-in checks |
+
+**`app.py`**: `--port N`, `--no-browser`, `--selftest`.
+
+**`browse.py`** runs one site on its own, which is the quickest way to fix a
+site after a redesign:
+
+```bash
+python3 browse.py chatgpt "ping" --fast
+```
+</details>
+
+<details>
+<summary><b>Platforms</b></summary>
+
+| | macOS | Linux | Windows |
+|---|---|---|---|
+| Packaged app download | ✅ Apple Silicon | – | ✅ x64 |
+| App from source (`Start.command` / `Start.bat` / `python3 app.py`) | ✅ | ✅ | ✅ |
+| Chrome history | ✅ | ✅ | ✅ |
+| Safari history | ✅ (needs Full Disk Access) | – | – |
+| Browser automation | ✅ | ✅ | ✅ |
+| Daily schedule | ✅ launchd | prints a cron line | ✅ Task Scheduler |
+
+It is built and tested on macOS. Linux and Windows should work but are less
+tested.
+</details>
+
+<details>
+<summary><b>Troubleshooting</b></summary>
+
+- **macOS won't open the app or `Start.command`.** See "First launch on a Mac"
+  above. For `Start.command`, right-click it and choose Open. If it says
+  "permission denied", run `chmod +x Start.command` once.
 - **Windows says "Windows protected your PC".** Click "More info", then "Run
-  anyway". It is a plain text file that starts `app.py`.
-- **Safari is skipped.** Give your terminal Full Disk Access in System Settings,
-  under Privacy & Security.
+  anyway".
+- **Safari is skipped.** Give the app, or your terminal when you run from
+  source, Full Disk Access in System Settings under Privacy & Security.
 - **Google says "this browser may not be secure".** Use Google and YouTube
   without logging in. The history is recorded either way.
 - **A chat site fails every time.** The site changed its layout. Update its
   selector in `SEL` at the top of `browse.py`, then test it with the command
   above.
-- **`plan` is slow or never passes.** Try a smaller model, fewer stages, or edit
-  `state/roadmap.json` by hand and run `plan --check`.
+- **Making the plan is slow or never passes.** Try a smaller model, fewer
+  steps, or edit `state/roadmap.json` by hand and run `plan --check`.
 - **"due in N h".** Only one day runs every 12 hours. `--force` skips this rule.
 - **"busy: another run holds the profile".** Two runs overlapped. Wait for the
   first one to finish.
+</details>
 
-## Code layout
+<details>
+<summary><b>Code layout</b></summary>
 
 ```
 app.py       the click-through app (and the entry point of the packaged app)
 persona.py   research, summary, persona prompt, report
 anti.py      planning, math, state, commands, scheduling, progress report
 browse.py    the browser; the only file that needs playwright
+docs/        the images in this README
 ```
 
 It uses only the Python standard library, plus Playwright for the browser.
+</details>
 
 ## Contributing
 
@@ -497,8 +529,8 @@ python3 app.py --selftest
 CI runs them on Python 3.10 and 3.13. Keep the dependency list short, and
 never commit anything from `out/` or `state/`.
 
-Ideas for next versions: more chat export formats, Firefox history, a Windows
-scheduler.
+Ideas for next versions: more chat export formats, Firefox history, an Intel
+Mac build.
 
 ## License
 

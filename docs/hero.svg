@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 440" width="1200" height="440" role="img" aria-labelledby="t d">
+<title id="t">anti-persona</title><desc id="d">Meet your opposite, then drift toward it one quiet day at a time. A curve rises from you to your opposite through unwind, house plants and gardening.</desc>
+<defs>
+<style>
+text{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+</style>
+<linearGradient id="path" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#7c9cff"/><stop offset=".5" stop-color="#2dd4bf"/><stop offset="1" stop-color="#4ade80"/></linearGradient>
+<radialGradient id="g1" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#4ade80" stop-opacity=".22"/><stop offset="1" stop-color="#4ade80" stop-opacity="0"/></radialGradient>
+<radialGradient id="g2" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#7c9cff" stop-opacity=".22"/><stop offset="1" stop-color="#7c9cff" stop-opacity="0"/></radialGradient>
+<linearGradient id="hp" x1="740" y1="0" x2="1130" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#7c9cff"/><stop offset=".5" stop-color="#2dd4bf"/><stop offset="1" stop-color="#4ade80"/></linearGradient>
+<linearGradient id="ha" x1="0" y1="110" x2="0" y2="340" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#4ade80" stop-opacity=".16"/><stop offset="1" stop-color="#7c9cff" stop-opacity="0"/></linearGradient>
+<clipPath id="hc"><rect width="1200" height="440" rx="24"/></clipPath>
+</defs>
+<g clip-path="url(#hc)"><rect width="1200" height="440" fill="#0b0e14"/>
+<circle cx="1040" cy="90" r="330" fill="url(#g1)"/><circle cx="760" cy="420" r="300" fill="url(#g2)"/></g>
+<rect x=".5" y=".5" width="1199" height="439" rx="24" fill="none" stroke="#262c3a"/>
+<text x="64.0" y="104.0" font-size="13" font-weight="700" fill="#2dd4bf" text-anchor="start" letter-spacing="2">LOCAL-FIRST  ·  OPEN SOURCE  ·  MIT</text>
+<text x="64.0" y="182.0" font-size="70" font-weight="800" fill="#ffffff" text-anchor="start" letter-spacing="-1.5">anti-persona</text>
+<text x="64.0" y="234.0" font-size="24" font-weight="400" fill="#c3cad6" text-anchor="start" >Meet your opposite. Then drift toward it,</text>
+<text x="64.0" y="266.0" font-size="24" font-weight="400" fill="#c3cad6" text-anchor="start" >one quiet day at a time.</text>
+<rect x="64" y="312" width="204" height="36" rx="18" fill="#131722" stroke="#262c3a"/>
+<circle cx="82" cy="330" r="4.5" fill="#7c9cff"/>
+<text x="94.0" y="335.0" font-size="14" font-weight="500" fill="#eef1f6" text-anchor="start" >Runs on your computer</text>
+<rect x="279.6" y="312" width="211" height="36" rx="18" fill="#131722" stroke="#262c3a"/>
+<circle cx="297.6" cy="330" r="4.5" fill="#2dd4bf"/>
+<text x="309.6" y="335.0" font-size="14" font-weight="500" fill="#eef1f6" text-anchor="start" >You approve every step</text>
+<rect x="502.8" y="312" width="158" height="36" rx="18" fill="#131722" stroke="#262c3a"/>
+<circle cx="520.8" cy="330" r="4.5" fill="#4ade80"/>
+<text x="532.8" y="335.0" font-size="14" font-weight="500" fill="#eef1f6" text-anchor="start" >macOS · Windows</text>
+<line x1="730" y1="120" x2="1140" y2="120" stroke="#262c3a" stroke-dasharray="3 6"/>
+<line x1="730" y1="225" x2="1140" y2="225" stroke="#262c3a" stroke-dasharray="3 6"/>
+<line x1="730" y1="330" x2="1140" y2="330" stroke="#262c3a" stroke-dasharray="3 6"/>
+<path d="M750,330 C900,330 970,120 1120,120 L1120,340 L750,340 Z" fill="url(#ha)"/>
+<path d="M750,330 C900,330 970,120 1120,120" fill="none" stroke="url(#hp)" stroke-width="4" stroke-linecap="round"/>
+<circle cx="750.0" cy="330.0" r="9" fill="#7c9cff" stroke="#0b0e14" stroke-width="3"/>
+<circle cx="797.3" cy="322.8" r="5.5" fill="#6aa8f1" stroke="#0b0e14" stroke-width="3"/>
+<circle cx="839.9" cy="303.5" r="5.5" fill="#59b5e3" stroke="#0b0e14" stroke-width="3"/>
+<circle cx="879.3" cy="275.6" r="5.5" fill="#47c1d4" stroke="#0b0e14" stroke-width="3"/>
+<circle cx="916.6" cy="242.4" r="5.5" fill="#36cec6" stroke="#0b0e14" stroke-width="3"/>
+<circle cx="953.4" cy="207.6" r="5.5" fill="#30d5b8" stroke="#0b0e14" stroke-width="3"/>
+<circle cx="990.7" cy="174.4" r="5.5" fill="#37d7aa" stroke="#0b0e14" stroke-width="3"/>
+<circle cx="1030.1" cy="146.5" r="5.5" fill="#3dda9c" stroke="#0b0e14" stroke-width="3"/>
+<circle cx="1072.7" cy="127.2" r="5.5" fill="#44dc8e" stroke="#0b0e14" stroke-width="3"/>
+<circle cx="1120.0" cy="120.0" r="9" fill="#4ade80" stroke="#0b0e14" stroke-width="3"/>
+<text x="750.0" y="368.0" font-size="12" font-weight="800" fill="#7c9cff" text-anchor="middle" letter-spacing="1.5">YOU</text>
+<text x="1120.0" y="96.0" font-size="12" font-weight="800" fill="#4ade80" text-anchor="end" letter-spacing="1.5">YOUR OPPOSITE</text>
+<rect x="893.3" y="283.6" width="64.0" height="24" rx="12.0" fill="#191e2b" stroke="#262c3a"/><text x="925.3" y="299.9" font-size="12" font-weight="500" fill="#d7dce5" text-anchor="middle" >unwind</text>
+<rect x="967.4" y="215.6" width="106.0" height="24" rx="12.0" fill="#191e2b" stroke="#262c3a"/><text x="1020.4" y="231.9" font-size="12" font-weight="500" fill="#d7dce5" text-anchor="middle" >house plants</text>
+<rect x="1044.1" y="154.5" width="85.0" height="24" rx="12.0" fill="#191e2b" stroke="#262c3a"/><text x="1086.6" y="170.8" font-size="12" font-weight="500" fill="#d7dce5" text-anchor="middle" >gardening</text>
+<text x="935.0" y="405.0" font-size="13" font-weight="500" fill="#6b7485" text-anchor="middle" >10 steps  ·  about 7 weeks</text>
+</svg>
