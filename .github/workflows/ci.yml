@@ -19,5 +19,7 @@ jobs:
         run: python persona.py --selftest
       - name: Planner, metrics and state logic
         run: python anti.py selftest
+      - name: App request guard and command whitelist
+        run: python app.py --selftest
       - name: Browser channels compile
         run: python -m py_compile browse.py

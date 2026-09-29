@@ -46,7 +46,25 @@ ollama pull qwen3.8
 ollama pull nomic-embed-text
 ```
 
-## Use it
+## Easiest way: the app
+
+After installing, double-click:
+
+- **macOS:** `Start.command`
+- **Windows:** `Start.bat`
+
+A page opens in your browser with every step as a button, in order. Each step
+shows whether it is done, and the output of each button appears at the bottom.
+It also checks your setup, and missing models can be downloaded with one click.
+
+The first time on macOS, right-click `Start.command` and choose **Open**,
+because the file is not signed. You can also start the app from a terminal with
+`python3 app.py`.
+
+The app only listens on your own computer and uses a secret address that
+changes every time you start it.
+
+## Or use the terminal
 
 **1. Learn who you are.** The tool first shows what it will read and asks for
 permission. Then it opens a report in your browser.
@@ -357,13 +375,18 @@ python3 browse.py chatgpt "ping" --fast
 | Chrome history | ✅ | ✅ | ✅ |
 | Safari history | ✅ (needs Full Disk Access) | – | – |
 | Browser automation | ✅ | ✅ | ✅ |
-| `schedule` | ✅ launchd | prints a cron line | – (use Task Scheduler) |
+| `schedule` | ✅ launchd | prints a cron line | ✅ Task Scheduler |
+| The app (`Start.command` / `Start.bat`) | ✅ | ✅ `python3 app.py` | ✅ |
 
 It is built and tested on macOS. Linux and Windows should work but are less
 tested.
 
 ## Troubleshooting
 
+- **macOS says `Start.command` cannot be opened.** Right-click it and choose
+  Open. If it says "permission denied", run `chmod +x Start.command` once.
+- **Windows says "Windows protected your PC".** Click "More info", then "Run
+  anyway". It is a plain text file that starts `app.py`.
 - **Safari is skipped.** Give your terminal Full Disk Access in System Settings,
   under Privacy & Security.
 - **Google says "this browser may not be secure".** Use Google and YouTube
@@ -380,6 +403,7 @@ tested.
 ## Code layout
 
 ```
+app.py       the click-through app: a local page that runs the commands below
 persona.py   research, summary, persona prompt, report
 anti.py      planning, math, state, commands, scheduling, progress report
 browse.py    the browser; the only file that needs playwright
@@ -397,6 +421,10 @@ python3 persona.py --selftest
 
 ```bash
 python3 anti.py selftest
+```
+
+```bash
+python3 app.py --selftest
 ```
 
 CI runs them on Python 3.10 and 3.13. Keep the dependency list short, and

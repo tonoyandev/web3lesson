@@ -656,10 +656,35 @@ def plist_for(hh, mm):
     }
 
 
+WIN_TASK = "anti-persona"
+
+
+def parse_at(at):
+    try:
+        hh, mm = map(int, at.split(":"))
+    except ValueError:
+        hh = mm = -1
+    if not (0 <= hh < 24 and 0 <= mm < 60):
+        sys.exit(f"--at must look like 20:00, got {at!r}")
+    return hh, mm
+
+
 def cmd_schedule(a):
-    if sys.platform != "darwin":  # ponytail: launchd only; other systems get a line for their own scheduler
-        hh, mm = map(int, a.at.split(":"))
-        print("Automatic scheduling is macOS-only for now. Add this line with `crontab -e` (Linux):")
+    hh, mm = parse_at(a.at)
+    if sys.platform == "win32":  # Task Scheduler
+        subprocess.run(["schtasks", "/Delete", "/TN", WIN_TASK, "/F"], capture_output=True)
+        if a.remove:
+            print("schedule removed")
+            return 0
+        rm = load_roadmap()
+        if rm.get("approved") != rid(rm):
+            sys.exit("approve the roadmap first: python anti.py approve")
+        task = f'"{sys.executable}" "{ROOT / "anti.py"}" daily'
+        subprocess.run(["schtasks", "/Create", "/SC", "DAILY", "/TN", WIN_TASK, "/TR", task, "/ST", f"{hh:02d}:{mm:02d}", "/F"], check=True)
+        print(f"runs daily at {hh:02d}:{mm:02d} (Task Scheduler, task '{WIN_TASK}'); stop: python anti.py schedule --remove")
+        return 0
+    if sys.platform != "darwin":  # ponytail: no systemd timer; Linux users get a cron line
+        print("Add this line with `crontab -e`:")
         print(f'{mm} {hh} * * * "{sys.executable}" "{ROOT / "anti.py"}" daily >> "{STATE / "cron.log"}" 2>&1')
         return 0
     target = f"gui/{os.getuid()}"
@@ -671,12 +696,11 @@ def cmd_schedule(a):
     rm = load_roadmap()
     if rm.get("approved") != rid(rm):
         sys.exit("approve the roadmap first: python3 anti.py approve")
-    hh, mm = map(int, a.at.split(":"))
     STATE.mkdir(exist_ok=True)
     PLIST.parent.mkdir(parents=True, exist_ok=True)
     PLIST.write_bytes(plistlib.dumps(plist_for(hh, mm)))
     subprocess.run(["launchctl", "bootstrap", target, str(PLIST)], check=True)
-    print(f"runs daily at {a.at} (on wake if the Mac was asleep); log: state/launchd.log; stop: python3 anti.py schedule --remove")
+    print(f"runs daily at {hh:02d}:{mm:02d} (on wake if the Mac was asleep); log: state/launchd.log; stop: python3 anti.py schedule --remove")
     return 0
 
 
@@ -767,8 +791,15 @@ def selftest():
     st = {"k": 1, "theme": "t", "search_queries": ["a", "b"], "chat_prompts": ["c"]}
     assert merge_variant(st, {"search_queries": ["a2"], "chat_prompts": "bad"})["search_queries"] == ["a2", "b"]
     assert merge_variant(st, None)["chat_prompts"] == ["c"]
+    assert parse_at("7:05") == (7, 5)
+    for bad in ("24:00", "20", "x:y"):
+        try:
+            parse_at(bad)
+            raise AssertionError(bad)
+        except SystemExit:
+            pass
     pl = plistlib.loads(plistlib.dumps(plist_for(20, 5)))
-    assert pl["StartCalendarInterval"] == {"Hour": 20, "Minute": 5} and pl["ProgramArguments"][-1] == "daily" and "sh" not in pl["ProgramArguments"][0]
+    assert pl["StartCalendarInterval"] == {"Hour": 20, "Minute": 5} and pl["ProgramArguments"] == [sys.executable, str(ROOT / "anti.py"), "daily"]  # no shell
     global LOG_F
     keep, LOG_F = LOG_F, Path(tempfile.mkdtemp()) / "log.jsonl"
     try:
