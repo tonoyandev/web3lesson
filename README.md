@@ -540,6 +540,7 @@ persona.py   research, summary, persona prompt, report
 anti.py      planning, math, state, commands, scheduling, progress report
 browse.py    the browser; the only file that needs playwright
 docs/        the images in this README
+ROADMAP.md   what comes next
 ```
 
 It uses only the Python standard library, plus Playwright for the browser.
@@ -564,8 +565,8 @@ python3 app.py --selftest
 CI runs them on Python 3.10 and 3.13. Keep the dependency list short, and
 never commit anything from `out/` or `state/`.
 
-Ideas for next versions: more chat export formats, Firefox history, an Intel
-Mac build.
+Where the project is going, and what it needs to become a real product, is in
+the [roadmap](ROADMAP.md).
 
 ## License
 
