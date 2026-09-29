@@ -108,10 +108,11 @@ Pass it to any command: `python3 persona.py --model qwen3:8b`, `python3 anti.py 
 |---|---|---|
 | `--yes` | | skip the consent prompt |
 | `--extra DIR` | | folder containing a ChatGPT data export (`conversations.json`) |
+| `--chrome-history FILE` | | an extra Chrome `History` file, e.g. a second profile; repeatable |
 | `--model` | `qwen3.8:latest` | Ollama model |
 | `--lang` | `English` | language of the generated personas |
 | `--no-llm` | | only collect statistics and draw charts |
-| `--out DIR` | `out` | output folder |
+| `--out DIR` | `out/` next to the script | output folder |
 | `--selftest` | | offline logic checks |
 
 Reads, never modifies: Chrome history, Safari history (macOS), Claude Code
@@ -132,6 +133,7 @@ model. Writes `out/summary.json`, `out/persona.json`, `out/report.html`.
 | `login` | opens the automation profile so you can log in yourself; the tool never sees passwords |
 | `run` | next open day; `--dry-run`, `--only google,youtube`, `--stage K` (next open day of stage K), `--all` (demo: every open day now, 1–3 min apart), `--fast` (smoke tests), `--yes` (no prompt, approved roadmaps only), `--force` (ignore the once-a-day guard) |
 | `metrics` | plan, execution and drift metrics; `--judge` adds the independent observer (1–2 min) |
+| `daily` | what the scheduler runs: `run --yes`, then `metrics --judge` |
 | `schedule` | daily launchd job at `--at HH:MM`; `--remove` stops it |
 | `selftest` | offline logic checks |
 
@@ -177,7 +179,7 @@ anti-persona's is 1.
 
 | Metric | Definition | Target |
 |---|---|---|
-| neighbour similarity | cosine between the centroids of stages k and k+1 | ≥ 0.5 |
+| neighbour similarity | cosine between the centroids of stages k and k+1 | ≥ similarity of the first and last stage + 0.05 |
 | max step | largest position jump between neighbours | ≤ 2/(N−1) |
 | backslides | stages that move back toward the persona by more than 0.05 | 0 |
 | coverage | anti-persona interests reached (cosine ≥ 0.55) in the second half | ≥ 70% |
@@ -185,6 +187,12 @@ anti-persona's is 1.
 | challenge rate | runs stopped by a login wall or bot check | 0 |
 | observed position | position of what was actually seen: page titles, chat replies | follows the plan |
 | judge progress | a separate LLM call reads only the automation profile's history, names 6 interests, they are placed on the axis | ≥ 0.6 at the end |
+
+Neighbour similarity is judged relative to the similarity of the two ends of
+the roadmap. Lists of search queries all look alike to an embedding model
+(neighbours score 0.8+ even in a bad plan), so a fixed threshold would never
+fail; the relative one asks that consecutive stages be measurably closer than
+the start is to the finish.
 
 `plan` turns every miss into a concrete instruction for the next attempt
 ("stage 3 sits at 49% of the way, target 22%: make it closer to the persona").
@@ -214,7 +222,23 @@ through. Pacing is human (typing 60–180 ms per key, 20–90 s reading) and cap
 at one day of a stage (~11 actions) per 12 hours.
 
 **Separate profile.** The browser runs in `~/.anti/profile` (`chmod 700`),
-never in your everyday Chrome profile.
+never in your everyday Chrome profile. A lock file (`~/.anti/run.lock`) stops
+two runs from opening the profile at once, which would corrupt it.
+
+**What is done about bot detection, and what is not.** Chrome is started
+without the "controlled by automated software" banner and without the
+`navigator.webdriver` flag, so the profile is treated like any other Chrome
+window. That is the whole list. No fingerprint spoofing, no proxies, no CAPTCHA
+solving, no retries through a challenge.
+
+**Untrusted input.** Page titles come from websites and search terms and
+prompts come from you. Both are quoted into local LLM prompts as data, with an
+instruction to ignore anything that looks like a command. The HTML reports
+escape every value, so a hostile page title in your history cannot run script
+in the report.
+
+**History snapshots** are copied to a private temporary folder (with their
+journal/WAL side files, so the newest visits are included), read, and deleted.
 
 Only analyse data that is yours. Do not run this on someone else's computer or
 accounts.
@@ -262,6 +286,12 @@ tested; reports welcome.
   or edit `state/roadmap.json` by hand and run `plan --check`.
 - **`run` says the day is "due in N h".** One day per 12 h keeps the drift
   gradual. `--force` overrides.
+- **`run` says "busy: another run (pid N) holds the profile".** A scheduled
+  run and a manual one overlapped. Wait for it, or if the pid is dead the
+  next run reclaims the lock by itself.
+- **`--host` points to another machine.** The tool warns: the summary and
+  prompts are then sent there, and the "nothing leaves the machine" promise
+  no longer holds.
 
 ## Project structure
 

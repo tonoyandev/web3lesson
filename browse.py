@@ -10,6 +10,7 @@ Runs in its own profile (~/.anti/profile), always visible. Login walls and bot
 checks stop the run: they are never solved, bypassed or retried through.
 """
 import json
+import os
 import random
 import re
 import sys
@@ -22,6 +23,23 @@ from playwright.sync_api import TimeoutError as PWTimeout
 from playwright.sync_api import sync_playwright
 
 PROFILE = Path.home() / ".anti/profile"
+LOCK = PROFILE.parent / "run.lock"  # pid of the process that holds the profile open
+
+
+class Busy(Exception):
+    """Another run is using the profile right now (a manual run while the scheduler fires, or vice versa)."""
+
+
+def acquire_lock():
+    """Chrome corrupts a profile opened twice; clearing SingletonLock below is only safe if no run is alive."""
+    try:
+        pid = int(LOCK.read_text())
+        os.kill(pid, 0)
+    except (OSError, ValueError):
+        pass  # no lock, unreadable, or the process is gone
+    else:
+        raise Busy(f"another run (pid {pid}) holds {PROFILE}; wait for it or stop it")
+    LOCK.write_text(str(os.getpid()))
 
 # Sites redesign; when a channel breaks, fix its selector here and test with `python3 browse.py <channel> test --fast`.
 SEL = {
@@ -59,10 +77,11 @@ def pause(lo, hi, fast=False):
 @contextmanager
 def session(close_popups=True):
     PROFILE.mkdir(parents=True, exist_ok=True)
-    PROFILE.parent.chmod(0o700)  # holds Google/OpenAI/Anthropic cookies
+    for d in (PROFILE.parent, PROFILE):
+        d.chmod(0o700)  # holds Google/OpenAI/Anthropic cookies
+    acquire_lock()
     for f in ("SingletonLock", "SingletonSocket", "SingletonCookie"):
-        # ponytail: clears stale locks after a crash; assumes no other Chrome is using this profile right now
-        (PROFILE / f).unlink(missing_ok=True)
+        (PROFILE / f).unlink(missing_ok=True)  # stale after a crash; safe because the lock above proved no run is alive
     with sync_playwright() as pw:
         ctx = pw.chromium.launch_persistent_context(
             str(PROFILE),
@@ -80,6 +99,7 @@ def session(close_popups=True):
             yield page
         finally:
             ctx.close()
+            LOCK.unlink(missing_ok=True)
 
 
 def check(page):
@@ -185,8 +205,8 @@ if __name__ == "__main__":
     args = [x for x in sys.argv[1:] if x != "--fast"]
     if len(args) != 2 or args[0] not in CHANNELS:
         sys.exit(__doc__)
-    with session() as page:
-        try:
+    try:
+        with session() as page:
             print(json.dumps(CHANNELS[args[0]](page, args[1], "--fast" in sys.argv), ensure_ascii=False, indent=1))
-        except Challenge as e:
-            sys.exit(f"challenge: {e}")
+    except (Challenge, Busy) as e:
+        sys.exit(f"{type(e).__name__.lower()}: {e}")
