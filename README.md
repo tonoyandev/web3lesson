@@ -4,26 +4,155 @@
 ![python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![license](https://img.shields.io/badge/license-MIT-green)
 
-Find out who your digital traces say you are, design your opposite, and drift
-toward it one small, measured step a day.
+**Part 1** is all you need to use the tool. **Part 2** explains how it works
+inside, including the math.
 
-anti-persona is a local-first pipeline:
+---
 
-1. **Research.** Reads your browser history and AI-assistant chats on your own
-   machine and asks a local LLM to describe you (persona) and your mirror image
-   (anti-persona).
-2. **Plan.** Builds a roadmap of bridged stages from one to the other, e.g.
-   *software development → how to relax after a hard day → the beauty of natural
-   landscapes → stepping away from screens → living in nature*, and proves with
-   embeddings that no step is abrupt.
-3. **Execute.** After you approve, lives the roadmap one day at a time in a real
-   Chrome window: Google searches, YouTube videos, ChatGPT and Claude.ai
-   conversations. Each stage lasts several days, reworded every day.
-4. **Measure.** Tracks whether the plan is smooth, whether it ran, and whether
-   the browser profile's own history actually drifted.
+# Part 1. Quick guide
 
-Everything runs on your computer. The LLM and the embeddings run in
-[Ollama](https://ollama.com); no data is sent to any analytics or AI API.
+## What it does
+
+Your browser history and AI chats say a lot about you. This tool reads them on
+your own computer and asks a local AI model two questions: *who is this
+person?* and *who is their opposite?*
+
+Then it plans a slow trip from you to your opposite, in small steps. For
+example: *coding → how to relax after work → house plants → gardening → living
+in nature*.
+
+Once you approve the plan, it opens Chrome once a day and browses like a person
+at that step would. It runs Google searches, watches YouTube videos, and asks
+ChatGPT and Claude questions. It also measures whether the change is really
+happening.
+
+Nothing leaves your computer. The AI model runs locally with
+[Ollama](https://ollama.com).
+
+## What you need
+
+- Python 3.10 or newer
+- Google Chrome
+- [Ollama](https://ollama.com)
+- About 18 GB of free disk space for the default model. A smaller model works too, see below.
+
+## Install
+
+```bash
+git clone https://github.com/tonoyandev/web3lesson.git anti-persona
+cd anti-persona
+pip3 install -r requirements.txt
+ollama pull qwen3.8
+ollama pull nomic-embed-text
+```
+
+## Use it
+
+**1. Learn who you are.** The tool first shows what it will read and asks for
+permission. Then it opens a report in your browser.
+
+```bash
+python3 persona.py
+```
+
+**2. Make the plan.** This is slow. Each attempt takes about 20 minutes with the
+default model.
+
+```bash
+python3 anti.py plan
+```
+
+Want a specific destination instead of the mirror image? Tell it:
+
+```bash
+python3 anti.py plan --goal "house plants, gardening, living in nature"
+```
+
+**3. Read and approve the plan.** Nothing runs on its own until you do this.
+
+```bash
+python3 anti.py approve
+```
+
+**4. Log in once.** A separate Chrome window opens. Log in to Google, ChatGPT
+and Claude yourself. The tool never sees your passwords.
+
+```bash
+python3 anti.py login
+```
+
+**5. Run one day.** First see what it would do, then run it for real.
+
+```bash
+python3 anti.py run --dry-run
+```
+
+```bash
+python3 anti.py run
+```
+
+**6. Check progress.** This opens a dashboard with charts.
+
+```bash
+python3 anti.py metrics --judge
+```
+
+**7. Optional: make it automatic.** From now on it runs one day every evening.
+
+```bash
+python3 anti.py schedule --at 20:00
+```
+
+## How long it takes
+
+The default plan has 10 steps, and each step lasts 5 days. That is about seven
+weeks. Real people change slowly, so a slow change looks natural. You can make
+each step shorter or longer:
+
+```bash
+python3 anti.py plan --check --days-per-stage 3
+```
+
+## Smaller computer?
+
+Use a smaller model. Add `--model` to the commands:
+
+| Model | Download size | Speed and quality |
+|---|---|---|
+| `qwen3.8` (default) | 17 GB | best plans, slowest |
+| `qwen3:14b` | 9 GB | good balance |
+| `qwen3:8b` | 5 GB | fastest, needs more retries |
+
+```bash
+python3 anti.py plan --model qwen3:8b
+```
+
+## Please read before you use it
+
+- **Only use it on your own computer and your own accounts.**
+- **ChatGPT and Claude do not allow bots in their websites.** Your accounts
+  could be flagged. To skip them, add `--only google,youtube` to `run`.
+- **The tool never tricks security checks.** If a website shows a CAPTCHA or a
+  login page, it stops the run and leaves it to you.
+- **It uses its own Chrome profile.** Your normal Chrome and its history stay
+  untouched.
+
+## Stop or start over
+
+Stop the daily runs:
+
+```bash
+python3 anti.py schedule --remove
+```
+
+To start over completely, also delete the `out/` and `state/` folders and
+`~/.anti/`.
+
+---
+
+# Part 2. How it works
+
+## The pipeline
 
 ```mermaid
 flowchart TB
@@ -52,272 +181,229 @@ flowchart TB
   LOG --> M
 ```
 
-## Contents
+## 1. Research
 
-- [Quick start](#quick-start)
-- [Commands](#commands)
-- [How "gradual" is measured](#how-gradual-is-measured)
-- [Privacy and responsible use](#privacy-and-responsible-use)
-- [Data the tools write](#data-the-tools-write)
-- [Platform support](#platform-support)
-- [Troubleshooting](#troubleshooting)
-- [Contributing](#contributing)
+`persona.py` reads these sources and never changes them:
 
-## Quick start
+- Chrome history on macOS, Linux and Windows, plus extra profiles with `--chrome-history`
+- Safari history on macOS
+- Claude Code chats in `~/.claude/projects`
+- a ChatGPT data export, with `--extra DIR`
 
-Requirements: Python 3.10+, Google Chrome, [Ollama](https://ollama.com).
+The model never sees your raw history. The tool first boils it down to a
+summary: top domains, page titles, search terms, the hours you are active,
+keywords, and 30 short prompt samples. Only that summary goes to the model.
 
-```bash
-git clone https://github.com/tonoyandev/web3lesson.git anti-persona
-cd anti-persona
-pip3 install -r requirements.txt            # only dependency: playwright (drives your installed Chrome)
-ollama pull qwen3.8                          # default LLM (~17 GB); see "Choosing a model" below
-ollama pull nomic-embed-text                 # embeddings for the metrics (~270 MB)
-```
+The prompt tells the model three things. Browser history describes your whole
+life, while AI chats mostly describe your job. Every claim needs evidence from
+the data. The opposite must flip each trait one to one.
 
-Then:
+## 2. Planning
 
-```bash
-python3 persona.py                           # 1. research: shows what it will read, asks for consent
-python3 anti.py plan                         # 2. roadmap (slow: minutes per attempt on a laptop)
-python3 anti.py approve                      #    read it, approve it
-python3 anti.py login                        # 3. once: log in to Google / ChatGPT / Claude yourself
-python3 anti.py run                          #    live the next stage (asks before opening the browser)
-python3 anti.py metrics --judge              # 4. numbers and out/transition.html
-python3 anti.py schedule --at 20:00          #    optional: run automatically every day from now on
-```
+The model writes all stages in one go. It sees the whole trip at once, which
+helps keep an even pace. Two rules guide it:
 
-`python3 anti.py run --dry-run` prints what the next stage will do without
-opening anything. Start there.
+- **Bridge rule.** Each stage shares one concrete thing with the stage before
+  it, and adds one new thing that moves toward the goal.
+- **Pace rule.** Stage *k* should be *(k−1)/(N−1)* of the way, so stage 1 is 0%
+  and stage 10 is 100%.
 
-### Choosing a model
+The tool then checks the plan with the measurements below. If a check fails, it
+tells the model exactly what went wrong, for example "stage 3 sits at 49% of the
+way, target 22%". It tries up to 3 times and keeps the best plan.
 
-| Model | Size | Notes |
-|---|---|---|
-| `qwen3.8` (default) | ~17 GB | best roadmaps in testing; ~20 min per plan attempt on a laptop |
-| `qwen3:14b` | ~9 GB | good balance |
-| `qwen3:8b` | ~5 GB | fast; expect more validation retries |
+## 3. The math
 
-Pass it to any command: `python3 persona.py --model qwen3:8b`, `python3 anti.py plan --model qwen3:8b`.
+Every text is turned into a vector with `nomic-embed-text`. The persona's
+interests and the opposite's interests are two points. The line between them is
+an **axis**. Any text gets a **position** on that axis, where 0 is you and 1 is
+your opposite.
 
-## Commands
-
-### `persona.py` — research
-
-| Flag | Default | |
-|---|---|---|
-| `--yes` | | skip the consent prompt |
-| `--extra DIR` | | folder containing a ChatGPT data export (`conversations.json`) |
-| `--chrome-history FILE` | | an extra Chrome `History` file, e.g. a second profile; repeatable |
-| `--model` | `qwen3.8:latest` | Ollama model |
-| `--lang` | `English` | language of the generated personas |
-| `--no-llm` | | only collect statistics and draw charts |
-| `--out DIR` | `out/` next to the script | output folder |
-| `--selftest` | | offline logic checks |
-
-Reads, never modifies: Chrome history, Safari history (macOS), Claude Code
-chats (`~/.claude/projects`), and optionally a ChatGPT export. Only an aggregate
-(top domains, search terms, keywords, ~60 short prompt samples) reaches the
-model. Writes `out/summary.json`, `out/persona.json`, `out/report.html`.
-
-### `anti.py` — plan, run, measure
-
-| Command | What it does |
-|---|---|
-| `plan` | asks the LLM for N stages, scores them, feeds violations back, keeps the best of 3 attempts |
-| `plan --goal "a, b, c"` | replaces the anti-persona's work interests with your own destination, e.g. `"gardening, living in nature"` |
-| `plan --stages 7` | number of stages (default 10) |
-| `plan --days-per-stage 5` | days spent on each stage (default 5); `plan --check --days-per-stage 3` changes the pace of an existing roadmap without losing approval or progress |
-| `plan --check` | re-score a roadmap you edited by hand, no LLM |
-| `approve` | shows the roadmap, its scores and the responsible-use notice; required for unattended runs |
-| `login` | opens the automation profile so you can log in yourself; the tool never sees passwords |
-| `run` | next open day; `--dry-run`, `--only google,youtube`, `--stage K` (next open day of stage K), `--all` (demo: every open day now, 1–3 min apart), `--fast` (smoke tests), `--yes` (no prompt, approved roadmaps only), `--force` (ignore the once-a-day guard) |
-| `metrics` | plan, execution and drift metrics; `--judge` adds the independent observer (1–2 min) |
-| `daily` | what the scheduler runs: `run --yes`, then `metrics --judge` |
-| `schedule` | daily launchd job at `--at HH:MM`; `--remove` stops it |
-| `selftest` | offline logic checks |
-
-`browse.py` can run one channel on its own, which is the fastest way to fix a
-selector after a site redesign:
-
-```bash
-python3 browse.py google "test" --fast
-```
-
-## Pacing
-
-People's interests drift over weeks, not days. Recommendation systems react
-within days, and AI assistant memory follows repeated, personal signals rather
-than volume. So each stage is lived for several days (`--days-per-stage`,
-default 5):
-
-- day 1 of a stage uses the roadmap's own actions;
-- every later day, the local model rewords the stage once (same topic, new
-  wording and angle, same number of actions), and the rewording is saved to
-  `state/variants.json`, so retries repeat it exactly;
-- one day runs per 12 hours at most, about 11 actions, 10–15 minutes.
-
-With the defaults, 10 stages × 5 days is about seven weeks. Keep in mind that a
-Google account logged in to both your everyday browser and the automation
-profile sees both streams: the drift only looks complete once your own habits
-move too.
-
-## How "gradual" is measured
-
-Every text is embedded with `nomic-embed-text`. The persona's interest phrases
-and the anti-persona's define an axis, and any text gets a **position** on it:
-0 is the persona, 1 is the anti-persona.
-
-For unit vectors `e`, persona centroid `p` and anti-persona centroid `a`:
+For unit vectors, with `e` the text, `p` the persona centre and `a` the opposite
+centre:
 
 ```
 t(e) = (cos(e,a) − cos(e,p)) / (2·(1 − cos(p,a))) + 0.5
 ```
 
-rescaled so that the mean of the persona's own phrases is 0 and the
-anti-persona's is 1.
+This is the projection of `e` onto the line from `p` to `a`. The result is then
+rescaled, so that your own interest phrases average 0 and the opposite's
+average 1.
 
-| Metric | Definition | Target |
+### Plan checks
+
+| Check | What it means | Target |
 |---|---|---|
-| neighbour similarity | cosine between the centroids of stages k and k+1 | ≥ similarity of the first and last stage + 0.05 |
-| max step | largest position jump between neighbours | ≤ 2/(N−1) |
-| backslides | stages that move back toward the persona by more than 0.05 | 0 |
-| coverage | anti-persona interests reached (cosine ≥ 0.55) in the second half | ≥ 70% |
-| execution rate | successful actions / attempted actions | ≥ 0.9 |
-| challenge rate | runs stopped by a login wall or bot check | 0 |
-| observed position | position of what was actually seen: page titles, chat replies | follows the plan |
-| judge progress | a separate LLM call reads only the automation profile's history, names 6 interests, they are placed on the axis | ≥ 0.6 at the end |
+| neighbour similarity | how alike two neighbouring stages are | higher than the first and last stage's similarity + 0.05 |
+| max step | the biggest jump between two neighbours | at most 2/(N−1) |
+| backslides | stages that move back toward you by more than 0.05 | 0 |
+| coverage | share of the opposite's interests reached in the second half, with a cosine of at least 0.55 | at least 70% |
 
-Neighbour similarity is judged relative to the similarity of the two ends of
-the roadmap. Lists of search queries all look alike to an embedding model
-(neighbours score 0.8+ even in a bad plan), so a fixed threshold would never
-fail; the relative one asks that consecutive stages be measurably closer than
-the start is to the finish.
+**Why the similarity check is relative.** Lists of search queries always look
+alike to an embedding model. Neighbours score above 0.8 even in a bad plan, so a
+fixed threshold would never fail. Instead, neighbours must be clearly closer
+than the start is to the finish.
 
-`plan` turns every miss into a concrete instruction for the next attempt
-("stage 3 sits at 49% of the way, target 22%: make it closer to the persona").
+### Run checks
 
-Re-running the research is deliberately **not** used to measure drift: your
-main history doesn't change, and a sampled LLM varies more between two runs than
-ten days of drift would.
+| Check | What it means | Target |
+|---|---|---|
+| execution rate | actions that worked, out of actions tried | at least 0.9 |
+| challenge rate | runs stopped by a login page or bot check | 0 |
+| observed position | position of what was really seen: page titles and chat replies | follows the plan line |
+| judge progress | a separate model call reads only the automation profile's history, names 6 interests, and places them on the axis | at least 0.6 at the end |
 
-## Privacy and responsible use
+**Why drift is not measured by re-running the research.** Your main history
+barely changes, and a model gives slightly different answers every time. That
+noise is bigger than ten days of real drift. The judge looks only at the
+automation profile, so it measures just the change the tool made.
 
-**Your data stays local.** History databases are copied to a temp folder and
-read there. Nothing is uploaded. All generated files are git-ignored.
+## 4. Pacing
 
-**Consent first.** `persona.py` lists every source and its size before reading.
-Nothing runs unattended until you `approve` a roadmap; editing a stage revokes
-the approval.
+- Day 1 of a stage uses the plan's own actions.
+- Every later day, the model rewords the stage once. The topic stays the same,
+  the wording and angle are new, and the number of actions is kept. The new
+  wording is saved in `state/variants.json`, so a retry repeats it exactly.
+- At most one day runs every 12 hours. A day is about 11 actions and takes
+  10–15 minutes.
+- Typing takes 60–180 ms per key, and reading takes 20–90 seconds per page.
 
-**Read the terms of the services you automate.** Automating the ChatGPT and
-Claude.ai web apps is against OpenAI's and Anthropic's terms of use, and the
-logged-in accounts can be flagged. Their APIs would not shape an account's
-memory, which is why the web apps are used. Leave them out with
-`run --only google,youtube`. Only use this on accounts you own.
+A Google account that is logged in to both your normal browser and the
+automation profile sees both. The change only looks complete once your own
+habits change too.
 
-**No evasion.** Login walls, consent pages, CAPTCHAs and "unusual traffic" pages
-stop the run with exit code 2. They are never solved, bypassed or retried
-through. Pacing is human (typing 60–180 ms per key, 20–90 s reading) and capped
-at one day of a stage (~11 actions) per 12 hours.
+## 5. State and safety details
 
-**Separate profile.** The browser runs in `~/.anti/profile` (`chmod 700`),
-never in your everyday Chrome profile. A lock file (`~/.anti/run.lock`) stops
-two runs from opening the profile at once, which would corrupt it.
+- **The log is the progress.** `state/log.jsonl` records every action. A run
+  that stops halfway continues where it stopped, and it never repeats a
+  finished action. An action that fails twice is skipped, so one broken site
+  cannot block the plan.
+- **Approval is tied to the plan.** The plan's id is a hash of its stages.
+  Editing a stage cancels the approval. Changing only the pace keeps it.
+- **One run at a time.** A lock file, `~/.anti/run.lock`, stops two runs from
+  opening the same Chrome profile, which would corrupt it. A lock left by a
+  crash is cleaned up automatically.
+- **History copies are temporary.** History databases are copied to a private
+  temp folder together with their journal and WAL files, read in read-only mode,
+  and then deleted.
+- **Untrusted text.** Page titles come from websites. They are passed to the
+  model as quoted data, with an instruction to ignore any commands inside. Both
+  HTML reports escape every value, so a bad page title cannot run code.
+- **About bot detection.** Chrome starts without the "controlled by automated
+  software" banner and without the `navigator.webdriver` flag. Nothing else is
+  done: no fingerprint spoofing, no proxies, no CAPTCHA solving.
+- **Remote model warning.** If `--host` points to another computer, the tool
+  warns you, because your summary would then leave your machine.
+- **Permissions.** `~/.anti` holds your logins and is set to `chmod 700`.
 
-**What is done about bot detection, and what is not.** Chrome is started
-without the "controlled by automated software" banner and without the
-`navigator.webdriver` flag, so the profile is treated like any other Chrome
-window. That is the whole list. No fingerprint spoofing, no proxies, no CAPTCHA
-solving, no retries through a challenge.
+## Files it writes
 
-**Untrusted input.** Page titles come from websites and search terms and
-prompts come from you. Both are quoted into local LLM prompts as data, with an
-instruction to ignore anything that looks like a command. The HTML reports
-escape every value, so a hostile page title in your history cannot run script
-in the report.
-
-**History snapshots** are copied to a private temporary folder (with their
-journal/WAL side files, so the newest visits are included), read, and deleted.
-
-Only analyse data that is yours. Do not run this on someone else's computer or
-accounts.
-
-## Data the tools write
-
-| Path | Content |
+| Path | What is inside |
 |---|---|
-| `out/summary.json` | aggregated research statistics |
-| `out/persona.json` | persona and anti-persona |
+| `out/summary.json` | the research summary |
+| `out/persona.json` | you and your opposite |
 | `out/report.html` | research dashboard |
-| `out/transition.html` | transition dashboard |
-| `state/roadmap.json` | the plan and its scores; previous plans kept as `roadmap-<id>.json` |
-| `state/log.jsonl` | every action with its result; this *is* the progress state |
-| `state/variants.json` | the daily rewording of each stage, generated once per day |
+| `out/transition.html` | progress dashboard |
+| `state/roadmap.json` | the plan and its scores; old plans are kept as `roadmap-<id>.json` |
+| `state/log.jsonl` | every action and its result |
+| `state/variants.json` | the daily rewordings |
 | `state/metrics.jsonl` | one line per measurement |
-| `~/.anti/profile/` | the automation Chrome profile and its logins |
+| `~/.anti/profile/` | the automation Chrome profile |
 
-To start over: delete `out/`, `state/` and `~/.anti/profile`, and run
-`python3 anti.py schedule --remove`.
+`out/` and `state/` hold personal data and are git-ignored.
 
-## Platform support
+## All commands
+
+### `persona.py`
+
+| Flag | What it does |
+|---|---|
+| `--yes` | skip the permission question |
+| `--extra DIR` | add a ChatGPT data export |
+| `--chrome-history FILE` | add another Chrome profile; can be repeated |
+| `--model NAME` | Ollama model; default `qwen3.8:latest` |
+| `--host URL` | Ollama address; default `http://localhost:11434` |
+| `--lang LANG` | language of the report; default English |
+| `--no-llm` | only statistics and charts |
+| `--out DIR` | output folder; default `out/` next to the script |
+| `--selftest` | run the built-in checks |
+
+### `anti.py`
+
+| Command | What it does |
+|---|---|
+| `plan` | make a plan; `--stages N` (default 10), `--days-per-stage N` (default 5), `--goal "a, b"`, `--attempts N` |
+| `plan --check` | re-score a plan you edited by hand; can also change `--days-per-stage` |
+| `approve` | review and approve the plan |
+| `login` | open the automation profile to log in |
+| `run` | run the next day; `--dry-run`, `--only google,youtube`, `--stage K`, `--all` (demo), `--fast` (testing), `--yes`, `--force` |
+| `metrics` | measure progress; `--judge` adds the independent check |
+| `daily` | what the scheduler runs: `run --yes`, then `metrics --judge` |
+| `schedule` | run daily at `--at HH:MM`; `--remove` to stop |
+| `selftest` | run the built-in checks |
+
+### `browse.py`
+
+Runs one site on its own. It is useful for fixing a site after a redesign:
+
+```bash
+python3 browse.py chatgpt "ping" --fast
+```
+
+## Platforms
 
 | | macOS | Linux | Windows |
 |---|---|---|---|
 | Chrome history | ✅ | ✅ | ✅ |
-| Safari history | ✅ (needs Full Disk Access for the terminal) | – | – |
+| Safari history | ✅ (needs Full Disk Access) | – | – |
 | Browser automation | ✅ | ✅ | ✅ |
 | `schedule` | ✅ launchd | prints a cron line | – (use Task Scheduler) |
 
-Developed and tested on macOS. Linux and Windows paths are implemented but less
-tested; reports welcome.
+It is built and tested on macOS. Linux and Windows should work but are less
+tested.
 
 ## Troubleshooting
 
-- **Safari is skipped.** Give your terminal app Full Disk Access in System
-  Settings → Privacy & Security.
-- **"This browser or app may not be secure" on Google sign-in.** Run Google and
-  YouTube logged out; the local history the metrics read is recorded either way.
-- **A chat channel fails every time.** The site changed its markup. Update the
-  selector in the `SEL` dict at the top of `browse.py` and test with
-  `python3 browse.py chatgpt "ping" --fast`. A failing action is skipped after
-  two tries, so one broken channel never stalls the roadmap.
-- **`plan` is slow or never valid.** Try `--model qwen3:14b`, fewer `--stages`,
-  or edit `state/roadmap.json` by hand and run `plan --check`.
-- **`run` says the day is "due in N h".** One day per 12 h keeps the drift
-  gradual. `--force` overrides.
-- **`run` says "busy: another run (pid N) holds the profile".** A scheduled
-  run and a manual one overlapped. Wait for it, or if the pid is dead the
-  next run reclaims the lock by itself.
-- **`--host` points to another machine.** The tool warns: the summary and
-  prompts are then sent there, and the "nothing leaves the machine" promise
-  no longer holds.
+- **Safari is skipped.** Give your terminal Full Disk Access in System Settings,
+  under Privacy & Security.
+- **Google says "this browser may not be secure".** Use Google and YouTube
+  without logging in. The history is recorded either way.
+- **A chat site fails every time.** The site changed its layout. Update its
+  selector in `SEL` at the top of `browse.py`, then test it with the command
+  above.
+- **`plan` is slow or never passes.** Try a smaller model, fewer stages, or edit
+  `state/roadmap.json` by hand and run `plan --check`.
+- **"due in N h".** Only one day runs every 12 hours. `--force` skips this rule.
+- **"busy: another run holds the profile".** Two runs overlapped. Wait for the
+  first one to finish.
 
-## Project structure
+## Code layout
 
 ```
-persona.py   research: collectors, aggregation, persona prompt, report
-anti.py      planner, embedding metrics, state, CLI, schedule, transition report
-browse.py    Playwright channels; the only module that imports playwright
+persona.py   research, summary, persona prompt, report
+anti.py      planning, math, state, commands, scheduling, progress report
+browse.py    the browser; the only file that needs playwright
 ```
 
-Standard library only, plus Playwright for the browser.
+It uses only the Python standard library, plus Playwright for the browser.
 
 ## Contributing
 
-Issues and pull requests are welcome. Before opening a PR:
+Issues and pull requests are welcome. Please run the checks first:
 
 ```bash
 python3 persona.py --selftest
+```
+
+```bash
 python3 anti.py selftest
 ```
 
-CI runs both on Python 3.10 and 3.13. Keep the dependency list at one entry,
-keep new behaviour covered by the selftests, and never commit anything from
-`out/` or `state/`.
+CI runs them on Python 3.10 and 3.13. Keep the dependency list short, and
+never commit anything from `out/` or `state/`.
 
-Ideas for next versions: more AI chat export formats, a Windows scheduler,
-Firefox history, stage insertion when a single jump keeps failing validation.
+Ideas for next versions: more chat export formats, Firefox history, a Windows
+scheduler.
 
 ## License
 
