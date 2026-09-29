@@ -7,7 +7,7 @@
     python3 anti.py login         one-time manual login in the automation Chrome profile
     python3 anti.py run           live the next stage: google, youtube, chatgpt, claude
     python3 anti.py metrics       plan quality, execution, observed drift -> out/transition.html
-    python3 anti.py schedule      run one stage a day via launchd
+    python3 anti.py schedule      run one day of the roadmap daily via launchd
     python3 anti.py selftest
 
 State is two files: state/roadmap.json (the plan) and state/log.jsonl (what was done).
@@ -32,6 +32,7 @@ import persona
 ROOT = Path(__file__).resolve().parent
 STATE, OUT = ROOT / "state", ROOT / "out"
 ROADMAP_F, LOG_F, METRICS_F = STATE / "roadmap.json", STATE / "log.jsonl", STATE / "metrics.jsonl"
+VARIANTS_F = STATE / "variants.json"  # day 2+ wording of each stage, generated once, then fixed
 PROFILE_HISTORY = Path.home() / ".anti/profile/Default/History"
 PLIST = Path.home() / "Library/LaunchAgents/com.anti.run.plist"
 HOST, MODEL, EMBED = "http://localhost:11434", "qwen3.8:latest", "nomic-embed-text"
@@ -42,7 +43,8 @@ SMOOTH = 0.5  # min similarity between neighbouring stages
 COVER = 0.55  # an anti-persona interest counts as reached above this similarity
 MIN_COVERAGE = 0.7
 MAX_TRIES = 2  # a failing action is dropped after this many attempts, so one broken channel can't stall the roadmap
-GAP_HOURS = 12  # a new stage starts at most once per this many hours (a daily schedule passes, a double manual run doesn't)
+GAP_HOURS = 12  # a new day starts at most once per this many hours (a daily schedule passes, a double manual run doesn't)
+DAYS_PER_STAGE = 5  # people drift over weeks, not days: 10 stages x 5 days is about 7 weeks
 EST_SECONDS = {"google": 55, "youtube": 75, "chatgpt": 60, "claude": 60}
 
 ROADMAP = """You design a gradual, believable drift of one person's online interests from
@@ -85,6 +87,16 @@ Answer with ONLY this JSON: {{"interests": ["6 items"]}}
 
 SEARCHES: {searches}
 TITLES: {titles}
+"""
+
+VARY = """The same person keeps exploring "{theme}" on another day (day {day} of {days}).
+Rewrite the actions below the way they would do them today: same topic, same point
+in their journey, new wording and new angles, never a copy of the originals.
+Keep every list the same length, the same language mix and the same typing style
+(searches short and lowercase, chat prompts as full first-person sentences).
+Answer with ONLY a JSON object with the same keys.
+
+{actions}
 """
 
 TOS = """
@@ -250,6 +262,8 @@ def print_plan(rm):
     sc = rm.get("scores", {})
     P, C = sc.get("pos", []), sc.get("cos_next", [])
     cell = lambda xs, i: f"{xs[i]:5.2f}" if i < len(xs) else "    -"  # noqa: E731
+    d = days(rm)
+    print(f"\npace: {len(rm['stages'])} stages x {d} day(s) = {len(rm['stages']) * d} days of browsing")
     print(f"\n{'k':>2} {'pos':>5} {'sim>':>5}  theme  |  bridge")
     for i, s in enumerate(rm["stages"]):
         print(f"{s['k']:>2} {cell(P, i)} {cell(C, i)}  {s['theme'][:58]}  |  {s['bridge'][:48]}")
@@ -294,40 +308,99 @@ def log_line(**d):
         f.write(json.dumps({"ts": now_iso(), **d}, ensure_ascii=False) + "\n")
 
 
-def actions(rm):
-    out = []
-    for s in rm["stages"]:
-        acts = [(s["k"], ch, t) for f, ch in CHANNELS.items() for t in s.get(f, [])]
-        random.Random(s["k"]).shuffle(acts)  # mixed channels, same order on every retry
-        out += acts
-    return out
+def days(rm):
+    return max(int(rm.get("days_per_stage") or 1), 1)
+
+
+def slots(rm):
+    """One slot = one day of one stage, in the order they are lived."""
+    return [(s["k"], d) for s in rm["stages"] for d in range(1, days(rm) + 1)]
+
+
+def load_variants():
+    return json.loads(VARIANTS_F.read_text()) if VARIANTS_F.exists() else {}
+
+
+def slot_source(rm, k, d, variants):
+    """The stage itself on day 1, its saved rewording later, None if not generated yet."""
+    stage = next(s for s in rm["stages"] if s["k"] == k)
+    return stage if d == 1 else variants.get(f"{rid(rm)}:{k}.{d}")
+
+
+def slot_actions(src, k, d):
+    acts = [(k, d, ch, t) for f, ch in CHANNELS.items() for t in src.get(f, [])]
+    random.Random(k * 1000 + d).shuffle(acts)  # mixed channels, same order on every retry
+    return acts
 
 
 def key(x):
-    return (x["stage"], x["channel"], x["text"])
+    return (x["stage"], x.get("day", 1), x["channel"], x["text"])
 
 
-def pending(rm, log, only=None):
+def pending(acts, log, only=None):
     done = {key(x) for x in log if x.get("ok")}
     tries = collections.Counter(key(x) for x in log if not x.get("ok"))
-    return [a for a in actions(rm) if a not in done and tries[a] < MAX_TRIES and (not only or a[1] in only)]
+    return [a for a in acts if a not in done and tries[a] < MAX_TRIES and (not only or a[2] in only)]
 
 
-def too_soon(log, k):
-    """Hours left before stage k may start; 0 means go."""
-    if any(x["stage"] == k for x in log):
+def open_slots(rm, log, variants, only=None, stage=None, every=False):
+    """Slots with work left, in order; a slot whose wording is not generated yet counts as open."""
+    out = []
+    for k, d in slots(rm):
+        if stage and k != stage:
+            continue
+        src = slot_source(rm, k, d, variants)
+        if src is None or pending(slot_actions(src, k, d), log, only):
+            out.append((k, d))
+            if not every:
+                break
+    return out
+
+
+def too_soon(log, k, d=1):
+    """Hours left before day d of stage k may start; 0 means go."""
+    if any((x["stage"], x.get("day", 1)) == (k, d) for x in log):
         return 0  # already started: resume
-    prev = [x["ts"] for x in log if x["stage"] < k]
+    prev = [x["ts"] for x in log if (x["stage"], x.get("day", 1)) < (k, d)]
     if not prev:
         return 0
     passed = (dt.datetime.now() - dt.datetime.fromisoformat(max(prev))).total_seconds() / 3600
     return max(GAP_HOURS - passed, 0)
 
 
+def merge_variant(stage, out):
+    """Keep the model's rewording where usable, fall back to the original wording per item."""
+    v = {"k": stage["k"], "theme": stage["theme"]}
+    for f in CHANNELS:
+        orig = stage.get(f, [])
+        new = [str(x).strip() for x in ((out or {}).get(f) or []) if str(x).strip()] if isinstance(out, dict) else []
+        v[f] = (new + orig[len(new):])[: len(orig)]
+    return v
+
+
+def make_variant(rm, k, d, a):
+    stage = next(s for s in rm["stages"] if s["k"] == k)
+    fields = {f: stage.get(f, []) for f in CHANNELS if stage.get(f)}
+    prompt = VARY.format(theme=stage["theme"], day=d, days=days(rm), actions=json.dumps(fields, ensure_ascii=False, indent=1))
+    print(f"* rewording stage {k} for day {d} with {a.model} ...", flush=True)
+    try:
+        out = persona.llm_json(prompt, a.model, a.host, temperature=0.9)
+    except (urllib.error.URLError, ValueError, KeyError) as e:
+        print(f"  model unavailable ({e}); day {d} reuses the original wording")
+        out = None
+    variants = load_variants()
+    variants[f"{rid(rm)}:{k}.{d}"] = v = merge_variant(stage, out)
+    STATE.mkdir(exist_ok=True)
+    VARIANTS_F.write_text(json.dumps(variants, ensure_ascii=False, indent=1))
+    return v
+
+
 # ---------------------------------------------------------------- commands
 def cmd_plan(a):
     if a.check:
         rm = load_roadmap()
+        if a.days_per_stage:  # pacing only: approval and progress survive
+            rm["days_per_stage"] = a.days_per_stage
         rm["scores"] = score(rm)
         save_roadmap(rm)
         print_plan(rm)
@@ -371,7 +444,8 @@ def cmd_plan(a):
         sys.exit("the model gave no usable roadmap; try again or use --model qwen3:14b")
     if ROADMAP_F.exists():  # keep the previous plan, its log lines stay keyed by its id
         ROADMAP_F.rename(STATE / f"roadmap-{rid(load_roadmap())}.json")
-    rm = {"created": now_iso(), "model": a.model, **best, "searches": searches, "approved": None}
+    rm = {"created": now_iso(), "model": a.model, **best, "searches": searches,
+          "days_per_stage": a.days_per_stage or DAYS_PER_STAGE, "approved": None}
     save_roadmap(rm)
     print_plan(rm)
     print(f"\nsaved {ROADMAP_F.relative_to(ROOT)}; edit it by hand if you like, then: python3 anti.py approve")
@@ -406,7 +480,7 @@ def cmd_login(a):
 
 
 def estimate(acts, fast):
-    return round(sum(15 if fast else EST_SECONDS[ch] + 12 for _, ch, _ in acts) / 60)
+    return round(sum(15 if fast else EST_SECONDS[ch] + 12 for _, _, ch, _ in acts) / 60)
 
 
 def cmd_run(a):
@@ -416,26 +490,32 @@ def cmd_run(a):
     only = set(a.only.split(",")) if a.only else None
     if only and only - set(CHANNELS.values()):
         sys.exit(f"unknown channel(s) {sorted(only - set(CHANNELS.values()))}; use {sorted(CHANNELS.values())}")
-    todo = pending(rm, log, only)
-    if a.stage:
-        todo = [x for x in todo if x[0] == a.stage]
+    todo = open_slots(rm, log, load_variants(), only, a.stage, a.all)
     if not todo:
         print(f"nothing pending for stage {a.stage}" if a.stage else "nothing pending: the roadmap is complete")
         return 0
-    stages = sorted({x[0] for x in todo}) if a.all else [todo[0][0]]
     if not (a.force or a.stage or a.all):
-        left = too_soon(log, stages[0])
+        left = too_soon(log, *todo[0])
         if left:
-            print(f"stage {stages[0]} is due in {left:.1f} h (one stage a day keeps it gradual); --force overrides")
+            print(f"stage {todo[0][0]} day {todo[0][1]} is due in {left:.1f} h (one day at a time keeps it gradual); --force overrides")
             return 0
     if a.yes and rm.get("approved") != r:
         sys.exit("the roadmap is not approved (or was edited after approval): python3 anti.py approve")
-    by_k = {s["k"]: s for s in rm["stages"]}
-    for k in stages:
-        acts = [x for x in todo if x[0] == k]
-        print(f"\nstage {k}/{len(rm['stages'])}: {by_k[k]['theme']}  ({len(acts)} actions, ~{estimate(acts, a.fast)} min)")
-        for _, ch, t in acts:
+    plan = []
+    for k, d in todo:
+        src = slot_source(rm, k, d, load_variants())
+        if src is None and not a.dry_run:
+            src = make_variant(rm, k, d, a)
+        theme = next(s["theme"] for s in rm["stages"] if s["k"] == k)
+        print(f"\nstage {k}/{len(rm['stages'])} day {d}/{days(rm)}: {theme}")
+        if src is None:
+            print("  (today's wording is generated by the model when the day actually runs)")
+            continue
+        acts = pending(slot_actions(src, k, d), log, only)
+        print(f"  {len(acts)} actions, ~{estimate(acts, a.fast)} min")
+        for _, _, ch, t in acts:
             print(f"  {ch:<8} {t}")
+        plan.append(acts)
     if a.dry_run:
         return 0
     if not a.yes and input("\nOpen the browser and run this? [y/N] ").strip().lower() != "y":
@@ -445,14 +525,14 @@ def cmd_run(a):
 
     run_id = now_iso()
     with browse.session() as page:
-        for i, k in enumerate(stages):
+        for i, acts in enumerate(plan):
             if i:
                 browse.pause(60, 180, a.fast)
-            for j, (_, ch, t) in enumerate(x for x in todo if x[0] == k):
+            for j, (k, d, ch, t) in enumerate(acts):
                 if j:
                     browse.pause(5, 20, a.fast)
-                print(f"* stage {k} {ch}: {t}", flush=True)
-                base = {"roadmap": r, "run": run_id, "stage": k, "channel": ch, "text": t}
+                print(f"* stage {k} day {d} {ch}: {t}", flush=True)
+                base = {"roadmap": r, "run": run_id, "stage": k, "day": d, "channel": ch, "text": t}
                 try:
                     log_line(**base, ok=True, **browse.CHANNELS[ch](page, t, a.fast))
                 except browse.Challenge as e:
@@ -462,7 +542,7 @@ def cmd_run(a):
                 except Exception as e:  # noqa: BLE001 - one broken channel must not stop the others
                     log_line(**base, ok=False, error=f"{type(e).__name__}: {str(e)[:300]}")
                     print(f"  failed: {type(e).__name__}: {str(e)[:200]}")
-    print("\nstage done. python3 anti.py metrics")
+    print("\nday done. python3 anti.py metrics")
     return 0
 
 
@@ -488,12 +568,12 @@ def cmd_metrics(a):
     rm = load_roadmap()
     r = rid(rm)
     log = read_log(r)
-    acts = actions(rm)
+    per_day = [a for s in rm["stages"] for a in slot_actions(s, s["k"], 1)]  # every day has the same shape
     done = {key(x) for x in log if x.get("ok")}
     tried = {key(x) for x in log}
     exe = {
-        ch: {"planned": sum(x[1] == ch for x in acts), "ok": sum(x[1] == ch and x in done for x in acts),
-             "failed": sum(x[1] == ch and x in tried - done for x in acts)}
+        ch: {"planned": days(rm) * sum(x[2] == ch for x in per_day), "ok": sum(x[2] == ch for x in done),
+             "failed": sum(x[2] == ch for x in tried - done)}
         for ch in CHANNELS.values()
     }
     runs = {x.get("run") for x in log}
@@ -502,10 +582,11 @@ def cmd_metrics(a):
         "roadmap": r,
         "approved": rm.get("approved") == r,
         "plan": {k: rm.get("scores", {}).get(k) for k in ("min_cos", "max_step", "step_limit", "backslides", "coverage", "valid")},
-        "completion": round(len(done) / max(len(acts), 1), 3),
+        "completion": round(len(done) / max(days(rm) * len(per_day), 1), 3),
         "exec_rate": round(len(done) / max(len(tried), 1), 3) if tried else None,
         "challenge_rate": round(sum(str(x.get("error", "")).startswith("challenge") for x in log) / max(len(runs), 1), 3),
         "channels": exe,
+        "days_per_stage": days(rm),
         "stages_ok": {s["k"]: sum(x[0] == s["k"] for x in done) for s in rm["stages"]},
     }
     try:
@@ -612,7 +693,7 @@ new Chart(document.getElementById('prog'),{type:'line',data:{labels:H.map(h=>h.d
 document.getElementById('judge').textContent=M.judge?'judge sees: '+M.judge.interests.join(', '):'run metrics --judge to measure the profile itself';
 const ok=M.stages_ok||{},tot=s=>['search_queries','youtube_queries','chat_prompts','claude_prompts'].reduce((n,k)=>n+(s[k]||[]).length,0);
 document.getElementById('stages').innerHTML='<tr><th>k</th><th>theme</th><th>bridge</th><th>done</th><th>planned pos</th><th>observed</th></tr>'+
- D.stages.map((s,i)=>`<tr><td>${s.k}</td><td>${s.theme}</td><td class="mut">${s.bridge}</td><td>${ok[s.k]||0}/${tot(s)}</td><td>${f((S.pos||[])[i])}</td><td>${f(obs[s.k])}</td></tr>`).join('');
+ D.stages.map((s,i)=>`<tr><td>${s.k}</td><td>${s.theme}</td><td class="mut">${s.bridge}</td><td>${ok[s.k]||0}/${tot(s)*(M.days_per_stage||1)}</td><td>${f((S.pos||[])[i])}</td><td>${f(obs[s.k])}</td></tr>`).join('');
 </script></body></html>"""
 
 
@@ -635,11 +716,22 @@ def selftest():
     assert sb["backslides"] == 1 and not sb["valid"] and "drifts back" in feedback(sb), sb
     assert "stage 3 sits at" in feedback(sb) and "further toward the anti-persona" in feedback(sb)
     assert rid(rm) != rid(bad)
-    log = [{"stage": 1, "channel": "google", "text": "s1", "ok": True, "ts": now_iso()}]
-    log += [{"stage": 2, "channel": "google", "text": "s2", "ok": False, "ts": now_iso()}] * MAX_TRIES
-    assert [x[2] for x in pending(rm, log)] == ["s3", "s4"]
-    assert pending(rm, log, only={"chatgpt"}) == []
+    log = [{"stage": 1, "channel": "google", "text": "s1", "ok": True, "ts": now_iso()}]  # old lines have no "day"
+    log += [{"stage": 2, "day": 1, "channel": "google", "text": "s2", "ok": False, "ts": now_iso()}] * MAX_TRIES
+    acts = [x for k, d in slots(rm) for x in slot_actions(rm["stages"][k - 1], k, d)]
+    assert [x[3] for x in pending(acts, log)] == ["s3", "s4"]
+    assert pending(acts, log, only={"chatgpt"}) == []
+    assert open_slots(rm, log, {}) == [(3, 1)] and open_slots(rm, log, {}, every=True) == [(3, 1), (4, 1)]
     assert too_soon(log[:1], 2) > GAP_HOURS - 1 and too_soon(log[:1], 1) == 0 and too_soon([], 1) == 0
+    rm2 = {**rm, "days_per_stage": 2}
+    assert len(slots(rm2)) == 8 and open_slots(rm2, log[:1], {}) == [(1, 2)]  # day 2 not worded yet -> open
+    assert too_soon(log[:1], 1, 2) > GAP_HOURS - 1  # day 2 waits for the next day
+    var = {f"{rid(rm2)}:1.2": {"search_queries": ["s1 again"]}}
+    assert slot_source(rm2, 1, 2, var)["search_queries"] == ["s1 again"]
+    assert open_slots(rm2, log[:1] + [{"stage": 1, "day": 2, "channel": "google", "text": "s1 again", "ok": True}], var) == [(2, 1)]
+    st = {"k": 1, "theme": "t", "search_queries": ["a", "b"], "chat_prompts": ["c"]}
+    assert merge_variant(st, {"search_queries": ["a2"], "chat_prompts": "bad"})["search_queries"] == ["a2", "b"]
+    assert merge_variant(st, None)["chat_prompts"] == ["c"]
     assert plistlib.loads(plistlib.dumps(plist_for(20, 5)))["StartCalendarInterval"] == {"Hour": 20, "Minute": 5}
     got = normalize({"stages": [{"theme": "t", "search_queries": ["q", " "], "chat_prompts": None}, "junk", {"theme": "only"}]})
     assert [s["k"] for s in got] == [1, 2] and got[0]["search_queries"] == ["q"] and got[1]["search_queries"] == ["only"]
@@ -658,12 +750,13 @@ def main():
     p.add_argument("--stages", type=int, default=10)
     p.add_argument("--attempts", type=int, default=3)
     p.add_argument("--check", action="store_true", help="re-score an edited roadmap without the LLM")
+    p.add_argument("--days-per-stage", type=int, help=f"days spent on each stage (default {DAYS_PER_STAGE}); with --check changes the pace of an existing roadmap")
     p.add_argument("--goal", help="comma list that replaces the anti-persona's work interests, e.g. 'gardening, living in nature'")
     sub.add_parser("approve", parents=[common], help="review and approve the roadmap")
     sub.add_parser("login", parents=[common], help="log in once in the automation profile")
     p = sub.add_parser("run", parents=[common], help="run the next stage")
-    p.add_argument("--stage", type=int, help="run (the rest of) this stage")
-    p.add_argument("--all", action="store_true", help="demo: every pending stage now, 1-3 min apart")
+    p.add_argument("--stage", type=int, help="run the next open day of this stage")
+    p.add_argument("--all", action="store_true", help="demo: every open day of every stage now, 1-3 min apart")
     p.add_argument("--only", help="comma list of channels: google,youtube,chatgpt,claude")
     p.add_argument("--dry-run", action="store_true", help="print what would run, open nothing")
     p.add_argument("--yes", action="store_true", help="no prompt; requires an approved roadmap")
@@ -681,6 +774,8 @@ def main():
     HOST = a.host
     if a.cmd == "plan" and a.stages < 3:
         sys.exit("--stages must be at least 3")
+    if a.cmd == "plan" and a.days_per_stage is not None and a.days_per_stage < 1:
+        sys.exit("--days-per-stage must be at least 1")
     cmds = {"plan": cmd_plan, "approve": cmd_approve, "login": cmd_login, "run": cmd_run, "metrics": cmd_metrics, "schedule": cmd_schedule}
     return cmds[a.cmd](a)
 

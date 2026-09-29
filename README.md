@@ -16,8 +16,9 @@ anti-persona is a local-first pipeline:
    *software development → how to relax after a hard day → the beauty of natural
    landscapes → stepping away from screens → living in nature*, and proves with
    embeddings that no step is abrupt.
-3. **Execute.** After you approve, lives one stage a day in a real Chrome window:
-   Google searches, YouTube videos, ChatGPT and Claude.ai conversations.
+3. **Execute.** After you approve, lives the roadmap one day at a time in a real
+   Chrome window: Google searches, YouTube videos, ChatGPT and Claude.ai
+   conversations. Each stage lasts several days, reworded every day.
 4. **Measure.** Tracks whether the plan is smooth, whether it ran, and whether
    the browser profile's own history actually drifted.
 
@@ -38,7 +39,7 @@ flowchart TB
     V -- violations fed back --> L2
     V -- passes --> R[roadmap.json]
   end
-  subgraph execute ["3 · Execute — anti.py run, one stage a day"]
+  subgraph execute ["3 · Execute — anti.py run, one day at a time"]
     direction TB
     AP[anti.py approve] --> B[browse.py: Google, YouTube, ChatGPT, Claude] --> LOG[log.jsonl]
   end
@@ -83,7 +84,7 @@ python3 anti.py approve                      #    read it, approve it
 python3 anti.py login                        # 3. once: log in to Google / ChatGPT / Claude yourself
 python3 anti.py run                          #    live the next stage (asks before opening the browser)
 python3 anti.py metrics --judge              # 4. numbers and out/transition.html
-python3 anti.py schedule --at 20:00          #    optional: one stage every day from now on
+python3 anti.py schedule --at 20:00          #    optional: run automatically every day from now on
 ```
 
 `python3 anti.py run --dry-run` prints what the next stage will do without
@@ -124,11 +125,12 @@ model. Writes `out/summary.json`, `out/persona.json`, `out/report.html`.
 |---|---|
 | `plan` | asks the LLM for N stages, scores them, feeds violations back, keeps the best of 3 attempts |
 | `plan --goal "a, b, c"` | replaces the anti-persona's work interests with your own destination, e.g. `"gardening, living in nature"` |
-| `plan --stages 7` | number of stages (default 10, one per day) |
+| `plan --stages 7` | number of stages (default 10) |
+| `plan --days-per-stage 5` | days spent on each stage (default 5); `plan --check --days-per-stage 3` changes the pace of an existing roadmap without losing approval or progress |
 | `plan --check` | re-score a roadmap you edited by hand, no LLM |
 | `approve` | shows the roadmap, its scores and the responsible-use notice; required for unattended runs |
 | `login` | opens the automation profile so you can log in yourself; the tool never sees passwords |
-| `run` | next stage; `--dry-run`, `--only google,youtube`, `--stage K`, `--all` (demo: every stage now, 1–3 min apart), `--fast` (smoke tests), `--yes` (no prompt, approved roadmaps only), `--force` (ignore the one-stage-a-day guard) |
+| `run` | next open day; `--dry-run`, `--only google,youtube`, `--stage K` (next open day of stage K), `--all` (demo: every open day now, 1–3 min apart), `--fast` (smoke tests), `--yes` (no prompt, approved roadmaps only), `--force` (ignore the once-a-day guard) |
 | `metrics` | plan, execution and drift metrics; `--judge` adds the independent observer (1–2 min) |
 | `schedule` | daily launchd job at `--at HH:MM`; `--remove` stops it |
 | `selftest` | offline logic checks |
@@ -139,6 +141,24 @@ selector after a site redesign:
 ```bash
 python3 browse.py google "test" --fast
 ```
+
+## Pacing
+
+People's interests drift over weeks, not days. Recommendation systems react
+within days, and AI assistant memory follows repeated, personal signals rather
+than volume. So each stage is lived for several days (`--days-per-stage`,
+default 5):
+
+- day 1 of a stage uses the roadmap's own actions;
+- every later day, the local model rewords the stage once (same topic, new
+  wording and angle, same number of actions), and the rewording is saved to
+  `state/variants.json`, so retries repeat it exactly;
+- one day runs per 12 hours at most, about 11 actions, 10–15 minutes.
+
+With the defaults, 10 stages × 5 days is about seven weeks. Keep in mind that a
+Google account logged in to both your everyday browser and the automation
+profile sees both streams: the drift only looks complete once your own habits
+move too.
 
 ## How "gradual" is measured
 
@@ -191,7 +211,7 @@ memory, which is why the web apps are used. Leave them out with
 **No evasion.** Login walls, consent pages, CAPTCHAs and "unusual traffic" pages
 stop the run with exit code 2. They are never solved, bypassed or retried
 through. Pacing is human (typing 60–180 ms per key, 20–90 s reading) and capped
-at one stage (~11 actions) per day.
+at one day of a stage (~11 actions) per 12 hours.
 
 **Separate profile.** The browser runs in `~/.anti/profile` (`chmod 700`),
 never in your everyday Chrome profile.
@@ -209,6 +229,7 @@ accounts.
 | `out/transition.html` | transition dashboard |
 | `state/roadmap.json` | the plan and its scores; previous plans kept as `roadmap-<id>.json` |
 | `state/log.jsonl` | every action with its result; this *is* the progress state |
+| `state/variants.json` | the daily rewording of each stage, generated once per day |
 | `state/metrics.jsonl` | one line per measurement |
 | `~/.anti/profile/` | the automation Chrome profile and its logins |
 
@@ -239,7 +260,7 @@ tested; reports welcome.
   two tries, so one broken channel never stalls the roadmap.
 - **`plan` is slow or never valid.** Try `--model qwen3:14b`, fewer `--stages`,
   or edit `state/roadmap.json` by hand and run `plan --check`.
-- **`run` says the stage is "due in N h".** One stage per 12 h keeps the drift
+- **`run` says the day is "due in N h".** One day per 12 h keeps the drift
   gradual. `--force` overrides.
 
 ## Project structure
