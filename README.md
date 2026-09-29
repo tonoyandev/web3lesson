@@ -38,7 +38,7 @@
 
 1. **Research.** A local AI reads a summary of your history and chats and describes two people: you, and your opposite.
 2. **Plan.** It draws a path between them in 10 small steps. Each step shares something with the one before, so nothing feels sudden.
-3. **Run.** Once you approve, it lives one day of the path at a time in its own Chrome window. It searches Google, watches YouTube, and asks ChatGPT and Claude questions, like a person at that step would.
+3. **Run.** Once you approve, it lives one day of the path at a time in its own Chrome window. It searches Google, watches YouTube, and asks the AIs you chose (ChatGPT, Claude, Gemini) questions, like a person at that step would.
 4. **Measure.** It checks that the path is smooth and that the change really shows up.
 
 ## One step at a time
@@ -50,6 +50,11 @@
 Real people change slowly, so the app does too. Each step lasts 5 days and is
 worded a little differently every day. The whole trip takes about seven weeks.
 You can make it faster or slower.
+
+**You choose which AIs see the change.** The app finds out which ones you use:
+the ChatGPT or Claude desktop app, local chats from Claude Code or the Gemini
+command line, or just the website, from your browser history. Tick the ones you
+want, or none to use only Google and YouTube.
 
 Every plan is made for the person who runs it. A programmer, a teacher and a
 nurse each get their own path. Want a destination of your own instead of the
@@ -133,7 +138,7 @@ When you run from source, your data stays next to the code in `out/` and `state/
 Please read before you start:
 
 - **Only use it on your own computer and your own accounts.**
-- **ChatGPT and Claude do not allow bots on their websites.** Your accounts could be flagged. You can switch them off in step 5 and use only Google and YouTube.
+- **ChatGPT, Claude and Gemini do not allow bots on their websites.** Your accounts could be flagged. Choose which AIs take part in step 2 of the app, or none to use only Google and YouTube.
 - **It never tries to get past a security check.** A CAPTCHA or a login page stops the run and leaves it to you.
 - **It uses its own Chrome profile.** Your everyday Chrome and its history stay untouched.
 
@@ -157,6 +162,23 @@ Pick one in the app's first step:
 | `qwen3.8` (default) | 17 GB | best plans, slowest: about 20 minutes per plan attempt |
 | `qwen3:14b` | 9 GB | good balance |
 | `qwen3:8b` | 5 GB | fastest, needs more retries |
+</details>
+
+<details>
+<summary><b>Which AIs does it work with?</b></summary>
+
+ChatGPT, Claude and Gemini, through their websites. Step 1 checks which ones you
+use and shows why, for example:
+
+| AI | What it looks for |
+|---|---|
+| ChatGPT | the desktop app, visits to chatgpt.com |
+| Claude | the desktop app, Claude Code chats, visits to claude.ai |
+| Gemini | the desktop app if there is one, Gemini command-line chats, visits to gemini.google.com |
+
+If it finds no app and no local chats but you visit the site, it says you use
+the web version. You can tick any AI, found or not. If you change your choice
+after approving a plan, approve it again; your progress is kept.
 </details>
 
 <details>
@@ -238,6 +260,12 @@ flowchart TB
 - Safari history on macOS
 - Claude Code chats in `~/.claude/projects`
 - a ChatGPT data export, with `--extra DIR`
+
+It also checks which AI assistants you use, and saves the result in
+`summary.json`: desktop apps in the usual install folders, the number of Claude
+Code and Gemini command-line chat files, and visits to chatgpt.com, claude.ai
+and gemini.google.com in your browser history. Only exact domains count, so
+look-alike sites don't. Gemini command-line chats are counted, not read.
 
 The model never sees your raw history. The tool first boils it down to a
 summary: top domains, page titles, search terms, the hours you are active,
@@ -336,7 +364,13 @@ habits change too.
   finished action. An action that fails twice is skipped, so one broken site
   cannot block the plan.
 - **Approval is tied to the plan.** The plan's id is a hash of its stages.
-  Editing a stage cancels the approval. Changing only the pace keeps it.
+  Editing a stage cancels the approval. So does changing which AIs the plan
+  talks to, because that changes which services it touches. Changing only the
+  pace keeps it. Progress is keyed by the stages alone, so a new AI choice
+  never loses it.
+- **Only the chosen AIs get prompts.** The plan asks the model for prompts only
+  for the AIs you picked. An AI added after planning reuses the plan's general
+  chat prompts until you make a new plan.
 - **One run at a time.** A lock file, `~/.anti/run.lock`, stops two runs from
   opening the same Chrome profile, which would corrupt it. A lock left by a
   crash is cleaned up automatically.
@@ -437,11 +471,12 @@ git-ignored.
 
 | Command | What it does |
 |---|---|
-| `plan` | make a plan; `--stages N` (default 10), `--days-per-stage N` (default 5), `--goal "a, b"`, `--attempts N` |
+| `plan` | make a plan; `--stages N` (default 10), `--days-per-stage N` (default 5), `--ais chatgpt,gemini` or `none`, `--goal "a, b"`, `--attempts N` |
+| `ais` | show which AIs were found and which take part; `--set chatgpt,claude,gemini` or `none` |
 | `plan --check` | re-score a plan you edited by hand; can also change `--days-per-stage` |
 | `approve` | review and approve the plan |
 | `login` | open the app's Chrome profile to log in |
-| `run` | run the next day; `--dry-run`, `--only google,youtube`, `--stage K`, `--all` (demo), `--fast` (testing), `--yes`, `--force` |
+| `run` | run the next day; `--dry-run`, `--only google,youtube,gemini`, `--stage K`, `--all` (demo), `--fast` (testing), `--yes`, `--force` |
 | `metrics` | measure progress; `--judge` adds the independent check |
 | `pull` | download `--model` through Ollama |
 | `daily` | what the scheduler runs: `run --yes`, then `metrics --judge` |

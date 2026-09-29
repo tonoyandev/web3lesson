@@ -52,6 +52,12 @@ SEL = {
         "stop": "[data-testid='stop-button']",
         "reply": "[data-message-author-role='assistant']",
     },
+    "gemini": {
+        "url": "https://gemini.google.com/app",
+        "box": "rich-textarea div[contenteditable='true'], div.ql-editor[contenteditable='true']",
+        "stop": "button[aria-label*='Stop']",
+        "reply": "model-response message-content",
+    },
     "claude": {
         "url": "https://claude.ai/new",
         "box": "div[contenteditable='true']",
@@ -199,6 +205,7 @@ CHANNELS = {
     "youtube": youtube,
     "chatgpt": lambda page, text, fast=False: chat(page, "chatgpt", text, fast),
     "claude": lambda page, text, fast=False: chat(page, "claude", text, fast),
+    "gemini": lambda page, text, fast=False: chat(page, "gemini", text, fast),
 }
 
 def main():

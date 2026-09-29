@@ -39,7 +39,7 @@ DATA = persona.DATA
 FROZEN = persona.FROZEN
 TOKEN = secrets.token_urlsafe(24)
 SERVER = None
-CHANNELS = ("google", "youtube", "chatgpt", "claude")
+CHANNELS = ("google", "youtube", "chatgpt", "claude", "gemini")
 MODEL_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/-]{0,80}$")
 TIME_RE = re.compile(r"^([01]?\d|2[0-3]):([0-5]\d)$")
 WIN_TASK = "anti-persona"
@@ -121,6 +121,12 @@ def _only(p):
     return [] if len(chosen) == len(CHANNELS) else ["--only", ",".join(chosen)]
 
 
+def _ais(p):
+    """Checked AIs -> the value for --ais / --set ('none' when nothing is checked)."""
+    chosen = [a for a in anti.CHAT if a in (p.get("ais") or [])]
+    return ",".join(chosen) or "none"
+
+
 def build(action, p):
     """Button -> argument list. Whitelisted actions, validated values, never a shell."""
     a, pe = (lambda *x: persona.script_cmd("anti", *x)), (lambda *x: persona.script_cmd("persona", *x))
@@ -136,7 +142,9 @@ def build(action, p):
         args = a("plan", "--model", _model(p), "--stages", str(_int(p, "stages", 3, 20, 10)),
                  "--days-per-stage", str(_int(p, "days", 1, 30, anti.DAYS_PER_STAGE)))
         goal = " ".join(str(p.get("goal") or "").split())[:300]
-        return args + (["--goal", goal] if goal else []), None
+        return args + ["--ais", _ais(p)] + (["--goal", goal] if goal else []), None
+    if action == "ais":
+        return a("ais", "--set", _ais(p)), None
     if action == "pace":
         return a("plan", "--check", "--days-per-stage", str(_int(p, "days", 1, 30, anti.DAYS_PER_STAGE))), None
     if action == "approve":
@@ -213,6 +221,7 @@ def status():
         "reports": {n: (anti.OUT / n).exists() for n in ("report.html", "transition.html")},
         "scheduled": scheduled(),
         "roadmap": None,
+        "ais": {"found": anti.detected(), "chosen": anti.chosen_ais(), "all": list(anti.CHAT)},
     }
     if anti.ROADMAP_F.exists():
         try:
@@ -223,7 +232,7 @@ def status():
             total = len(anti.slots(rm))
             sc = rm.get("scores", {})
             s["roadmap"] = {
-                "id": r, "approved": rm.get("approved") == r, "days_per_stage": anti.days(rm),
+                "id": r, "approved": anti.is_approved(rm), "days_per_stage": anti.days(rm), "ais": anti.assistants(rm),
                 "stages": [{"k": x["k"], "theme": x["theme"], "bridge": x["bridge"]} for x in rm["stages"]],
                 "scores": {k: sc.get(k) for k in ("pos", "min_cos", "cos_ends", "max_step", "step_limit", "backslides", "coverage", "valid")},
                 "days_done": total - len(left), "days_total": total,
@@ -370,7 +379,11 @@ a{color:var(--acc)}
 <button data-open="report.html" id="openreport">Open report</button><span class="note">Takes a few minutes.</span></div></div></section>
 
 <section class="card"><div class="head"><div class="num">2</div><h2>Make the plan</h2><span class="badge" id="b2"></span></div>
-<div class="body"><div class="row"><input type="text" id="goal" placeholder="Optional goal, e.g. house plants, gardening, living in nature"></div>
+<div class="body"><div><b>Which AIs should see the change?</b></div>
+<div class="mut">Found by step 1 on this computer. Google and YouTube are always part of the plan.</div>
+<ul class="checks" id="aichoice"></ul>
+<div class="row"><button data-act="ais" id="saveais">Save AI choice</button><span class="note" id="aisnote"></span></div>
+<div class="row"><input type="text" id="goal" placeholder="Optional goal, e.g. house plants, gardening, living in nature"></div>
 <div class="row"><label>Steps <input type="number" id="stages" value="10" min="3" max="20"></label>
 <label>Days per step <input type="number" id="days" value="5" min="1" max="30"></label>
 <button class="main" data-act="plan" id="plan">Make plan</button>
@@ -381,27 +394,24 @@ a{color:var(--acc)}
 <section class="card"><div class="head"><div class="num">3</div><h2>Approve the plan</h2><span class="badge" id="b3"></span></div>
 <div class="body"><div class="warnbox">Before you approve:<br>
 • Only use this on your own computer and your own accounts.<br>
-• ChatGPT and Claude do not allow bots on their websites. Your accounts could be flagged. You can leave them out in step 5.<br>
+• ChatGPT, Claude and Gemini do not allow bots on their websites. Your accounts could be flagged. Choose which AIs take part in step 2, or none.<br>
 • If a site shows a CAPTCHA or a login page, the run stops. It never tries to get past it.<br>
 • Everything runs in a separate Chrome profile. Your normal Chrome is untouched.</div>
 <div class="row"><label><input type="checkbox" id="understood"> I read the plan above and the notes</label>
 <button class="main" data-act="approve" id="approve">Approve</button></div></div></section>
 
 <section class="card"><div class="head"><div class="num">4</div><h2>Log in once</h2><span class="badge" id="b4"></span></div>
-<div class="body"><div class="mut">A separate Chrome window opens. Log in to Google, ChatGPT and Claude there yourself. The tool never sees your passwords.</div>
+<div class="body"><div class="mut">A separate Chrome window opens. Log in to Google and to the AIs your plan uses (ChatGPT, Claude, Gemini) there yourself. The tool never sees your passwords.</div>
 <div class="row"><button class="main" data-act="login" id="login">Open login window</button>
 <button id="loggedin" disabled>I'm logged in, save it</button></div></div></section>
 
 <section class="card"><div class="head"><div class="num">5</div><h2>Run a day</h2><span class="badge" id="b5"></span></div>
 <div class="body"><div id="progress" class="mut"></div><div class="bar"><div id="bar" style="width:0"></div></div>
-<div class="row">Sites: <label><input type="checkbox" class="ch" value="google" checked> Google</label>
-<label><input type="checkbox" class="ch" value="youtube" checked> YouTube</label>
-<label><input type="checkbox" class="ch" value="chatgpt" checked> ChatGPT</label>
-<label><input type="checkbox" class="ch" value="claude" checked> Claude</label></div>
+<div class="row" id="sites">Sites:</div>
 <div class="row"><button data-act="preview" id="preview">Preview today</button>
 <button class="main" data-act="run" id="run">Run today</button>
 <label class="note"><input type="checkbox" id="force"> ignore the 12-hour wait</label></div>
-<div class="note">A day is about 11 actions and takes 10–15 minutes. Chrome opens; you can watch.</div></div></section>
+<div class="note">A day is 7–13 actions (5 searches, 2 videos, 2 questions per chosen AI) and takes 10–15 minutes. Chrome opens; you can watch.</div></div></section>
 
 <section class="card"><div class="head"><div class="num">6</div><h2>See progress</h2><span class="badge" id="b6"></span></div>
 <div class="body"><div class="row"><button class="main" data-act="metrics" id="metrics">Measure now</button>
@@ -425,7 +435,20 @@ const badge=(id,txt,cls)=>{const b=$(id);b.textContent=txt;b.className='badge '+
 const chk=(ok,txt,extra)=>`<li><span class="${ok?'y':'n'}">${ok?'✓':'✗'}</span> ${txt} ${extra||''}</li>`;
 
 function params(act){return {action:act,model:$('model').value,goal:$('goal').value,stages:+$('stages').value,days:+$('days').value,
- channels:[...document.querySelectorAll('.ch:checked')].map(x=>x.value),force:$('force').checked,at:$('at').value}}
+ channels:[...document.querySelectorAll('.ch:checked')].map(x=>x.value),ais:[...document.querySelectorAll('.ai:checked')].map(x=>x.value),
+ force:$('force').checked,at:$('at').value}}
+const AINAME={chatgpt:'ChatGPT',claude:'Claude',gemini:'Gemini'};let aisDrawn=false,sitesKey='';
+function drawAIs(){ // drawn once per page load so the user's ticks are not reset by polling
+ if(aisDrawn||!S)return;aisDrawn=true;const found={};(S.ais.found||[]).forEach(x=>found[x.id]=x);
+ $('aichoice').innerHTML=S.ais.all.map(id=>{const f=found[id],how=f?f.how:(S.research?'run step 1 again to check':'do step 1 to check');
+  return `<li><label><input type="checkbox" class="ai" value="${e(id)}" ${S.ais.chosen.includes(id)?'checked':''}> <b>${e(AINAME[id]||id)}</b></label> <span class="${f&&f.used?'y':'mut'}">${e(how)}</span></li>`}).join('');
+ document.querySelectorAll('.ai').forEach(x=>x.onchange=render);
+}
+function drawSites(R){ // Google and YouTube, plus the AIs the plan uses
+ const ids=['google','youtube',...(R?R.ais:[])],key=ids.join();if(key===sitesKey)return;sitesKey=key;
+ const nm={google:'Google',youtube:'YouTube',...AINAME};
+ $('sites').innerHTML='Sites: '+ids.map(id=>`<label><input type="checkbox" class="ch" value="${e(id)}" checked> ${e(nm[id]||id)}</label>`).join(' ');
+}
 async function start(act){
  const r=await api('/api/start',params(act));
  if(r.error){alert(r.error);return}
@@ -469,6 +492,10 @@ function render(){
  $('research').disabled=busy||!ready||!$('consent').checked;$('openreport').disabled=!S.reports['report.html'];
 
  $('plan').disabled=busy||!ready||!S.research;$('pace').disabled=busy||!R;
+ drawAIs();drawSites(R);
+ const picked=[...document.querySelectorAll('.ai:checked')].map(x=>x.value).sort().join(),planned=R?[...R.ais].sort().join():null;
+ $('saveais').disabled=busy||!R||picked===planned;
+ $('aisnote').textContent=!R?'Your choice is used when you make the plan.':(picked===planned?'The plan uses: '+(R.ais.map(x=>AINAME[x]).join(', ')||'no AIs'):'Not saved yet. Saving needs a new approval in step 3; progress is kept.');
  if(R){const sc=R.scores||{},P=sc.pos||[],f=x=>x==null?'–':(+x).toFixed(2);
   badge('b2',sc.valid?'plan passes all checks':'plan made, some checks missed',sc.valid?'ok':'warn');
   $('plantable').innerHTML=`<table><tr><th>#</th><th>step</th><th>how it connects</th><th title="0 = you, 1 = your opposite">position</th></tr>`+
@@ -478,6 +505,7 @@ function render(){
  } else {badge('b2',S.research?'to do':'do step 1 first');$('plantable').innerHTML=''}
 
  badge('b3',R?(R.approved?'approved':'not approved'):'no plan yet',R&&R.approved?'ok':'');
+ $('b3').title=R?'The plan talks to: '+(R.ais.map(x=>AINAME[x]).join(', ')||'Google and YouTube only'):'';
  $('approve').disabled=busy||!R||R.approved||!$('understood').checked;
 
  badge('b4','do once, and again if a run stops at a login page');
@@ -518,6 +546,9 @@ def selftest():
         except ValueError:
             pass
     assert build("run", {"channels": ["google", "evil"]})[0][-2:] == ["--only", "google"]
+    assert build("ais", {"ais": ["gemini", "evil", "chatgpt"]})[0][-2:] == ["--set", "chatgpt,gemini"]
+    assert build("ais", {"ais": []})[0][-1] == "none"
+    assert "--ais" in build("plan", {"ais": ["claude"]})[0]
     assert "--only" not in build("run", {"channels": list(CHANNELS)})[0]
     assert build("approve", {})[1] == "y"
     for bad_time in ("25:00", "8pm", "20:00; ls"):

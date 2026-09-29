@@ -245,6 +245,64 @@ def collect_chatgpt(root):
     return {"files": len(files), **text_stats(msgs, hours, titles)}
 
 
+# ---------------------------------------------------------------- AI assistants
+AIS = {
+    "chatgpt": {"name": "ChatGPT", "hosts": ("chatgpt.com", "chat.openai.com"),
+                "apps": ["/Applications/ChatGPT.app", "~/Applications/ChatGPT.app", "%LOCALAPPDATA%/Packages/OpenAI.ChatGPT-Desktop_*"]},
+    "claude": {"name": "Claude", "hosts": ("claude.ai",),
+               "apps": ["/Applications/Claude.app", "~/Applications/Claude.app", "%LOCALAPPDATA%/AnthropicClaude"]},
+    "gemini": {"name": "Gemini", "hosts": ("gemini.google.com", "bard.google.com"),
+               "apps": ["/Applications/Gemini.app", "~/Applications/Gemini.app"]},
+}
+# Local chat folders that show an assistant is used. Only counted here; Claude Code chats are also read by collect_claude.
+LOCAL_CHATS = {"claude": (CLAUDE, "*.jsonl", "Claude Code"), "gemini": (HOME / ".gemini/tmp", "*.json", "Gemini CLI")}
+
+
+def app_installed(patterns):
+    for pat in patterns:
+        raw = os.path.expandvars(os.path.expanduser(pat))
+        if "%" in raw:  # the variable does not exist on this system (e.g. %LOCALAPPDATA% on a Mac)
+            continue
+        path = Path(raw)
+        if path.parent.exists() and any(path.parent.glob(path.name)):
+            return True
+    return False
+
+
+def ai_visits(history_files):
+    """Visits per assistant in Chrome ('urls') and Safari ('history_items') history files."""
+    counts = collections.Counter()
+    for path in history_files:
+        try:
+            with sqlite_snapshot(path) as con:
+                tables = {r[0] for r in con.execute("select name from sqlite_master where type='table'")}
+                table = next((t for t in ("urls", "history_items") if t in tables), None)
+                for url, n in con.execute(f"select url, visit_count from {table}") if table else []:
+                    host = domain(url or "")
+                    for ai, info in AIS.items():
+                        if any(host == h or host.endswith("." + h) for h in info["hosts"]):
+                            counts[ai] += n or 1
+        except (OSError, sqlite3.Error):
+            continue  # missing file, or Safari without Full Disk Access
+    return counts
+
+
+def detect_assistants(history_files):
+    """Which AI assistants this person uses: desktop app, local chat folders, or only the website."""
+    visits = ai_visits(history_files)
+    out = []
+    for ai, info in AIS.items():
+        app = app_installed(info["apps"])
+        root, pattern, label = LOCAL_CHATS.get(ai, (None, None, None))
+        local = sum(1 for _ in root.rglob(pattern)) if root and root.exists() else 0
+        signs = (["desktop app"] if app else []) + ([f"{label}: {local} chats"] if local else [])
+        if visits[ai]:
+            signs.append(f"{visits[ai]} web visits" if signs else f"web version, {visits[ai]} visits")
+        out.append({"id": ai, "name": info["name"], "app": app, "local_chats": local, "web_visits": visits[ai],
+                    "used": bool(signs), "how": ", ".join(signs) or "not found on this computer"})
+    return out
+
+
 # ---------------------------------------------------------------- LLM
 PROMPT = """You are a behavioral analyst. Below is an aggregated, anonymized summary of one
 person's local digital traces: browser history statistics, search terms, and
@@ -470,6 +528,7 @@ def main():
     }
     if args.extra:
         summary["chatgpt"] = run("chatgpt export", collect_chatgpt, args.extra)
+    summary["assistants"] = run("which AI assistants you use", detect_assistants, chrome_paths + [SAFARI])
 
     args.out.mkdir(parents=True, exist_ok=True)
     (args.out / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=1))
@@ -512,6 +571,18 @@ def selftest():
         m = collect_chrome_many([db, db])
         assert m["domains"][0]["n"] == 6 and m["urls"] == 2
     assert not [p for p in Path(tempfile.gettempdir()).glob("tmp*/History")], "history snapshot left behind"
+    with tempfile.TemporaryDirectory() as d:
+        db = Path(d) / "History"
+        con = sqlite3.connect(db)
+        con.executescript("create table urls(url,title,visit_count);"
+                          "insert into urls values('https://chatgpt.com/c/1','',3),('https://claude.ai/new','',2),"
+                          "('https://evil-claude.ai/x','',50),('https://claude.ai.evil.com/','',50),('https://gemini.google.com/app','',4);")
+        con.commit(); con.close()
+        v = ai_visits([db, Path(d) / "missing.db"])
+        assert v == {"chatgpt": 3, "claude": 2, "gemini": 4}, v  # look-alike domains do not count
+        det = {x["id"]: x for x in detect_assistants([db])}
+        assert set(det) == {"chatgpt", "claude", "gemini"} and det["gemini"]["web_visits"] == 4 and det["gemini"]["used"]
+    assert not app_installed(["%NO_SUCH_VAR_XYZ%/App", str(Path(tempfile.gettempdir()) / "no-such-app-*.app")])
     print("selftest ok")
 
 
