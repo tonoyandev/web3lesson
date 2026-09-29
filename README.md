@@ -25,22 +25,30 @@ Everything runs on your computer. The LLM and the embeddings run in
 [Ollama](https://ollama.com); no data is sent to any analytics or AI API.
 
 ```mermaid
-flowchart LR
-  subgraph research [persona.py]
+flowchart TB
+  subgraph research ["1 · Research — persona.py"]
+    direction TB
     H[Chrome / Safari history] --> A[local aggregation]
     C[AI chat logs] --> A
     A --> L1[Ollama LLM] --> P[persona + anti-persona]
   end
-  subgraph plan [anti.py plan]
-    P --> L2[Ollama LLM: N bridged stages] --> V{embedding checks}
+  subgraph plan ["2 · Plan — anti.py plan"]
+    direction TB
+    L2[Ollama LLM: N bridged stages] --> V{embedding checks}
     V -- violations fed back --> L2
-    V --> R[roadmap.json]
+    V -- passes --> R[roadmap.json]
   end
-  R --> AP[anti.py approve] --> RUN
-  subgraph RUN [anti.py run, daily]
-    B[browse.py: Google, YouTube, ChatGPT, Claude] --> LOG[log.jsonl]
+  subgraph execute ["3 · Execute — anti.py run, one stage a day"]
+    direction TB
+    AP[anti.py approve] --> B[browse.py: Google, YouTube, ChatGPT, Claude] --> LOG[log.jsonl]
   end
-  LOG --> M[anti.py metrics] --> D[transition.html]
+  subgraph measure ["4 · Measure — anti.py metrics"]
+    direction TB
+    M[plan, execution and drift metrics] --> D[transition.html]
+  end
+  P --> L2
+  R --> AP
+  LOG --> M
 ```
 
 ## Contents
