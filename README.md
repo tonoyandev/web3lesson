@@ -29,14 +29,45 @@ happening.
 Nothing leaves your computer. The AI model runs locally with
 [Ollama](https://ollama.com).
 
-## What you need
+## Easiest: download the app
+
+Get it from the [latest release](https://github.com/tonoyandev/web3lesson/releases/latest):
+
+- **Mac with Apple Silicon (M1 or newer):** `anti-persona-macos-apple-silicon.zip`
+- **Windows:** `anti-persona-windows-x64.zip`
+
+You don't need Python. You still need:
+
+- [Google Chrome](https://www.google.com/chrome/)
+- [Ollama](https://ollama.com/download), opened at least once so it runs in the background
+- about 18 GB of free disk space for the default model; smaller models are listed below
+
+**On a Mac:** unzip, then drag `anti-persona.app` into **Applications**. The
+app is not signed, so the first time macOS blocks it. Try to open it once, then
+go to **System Settings → Privacy & Security** and click **Open Anyway**.
+
+**On Windows:** unzip, open the `anti-persona` folder and double-click
+`anti-persona.exe`. If "Windows protected your PC" appears, click **More info**,
+then **Run anyway**. Keep the black window open while you use the app.
+
+The app opens a page in your browser with every step as a button. The first
+step downloads the models for you. Press **Quit** on the page when you are done.
+
+Your data is kept in `~/Library/Application Support/anti-persona` on a Mac and
+in `%APPDATA%\anti-persona` on Windows.
+
+Intel Macs and Linux: use the source version below.
+
+## Or run from source
+
+You need:
 
 - Python 3.10 or newer
 - Google Chrome
 - [Ollama](https://ollama.com)
 - About 18 GB of free disk space for the default model. A smaller model works too, see below.
 
-## Install
+### Install
 
 ```bash
 git clone https://github.com/tonoyandev/web3lesson.git anti-persona
@@ -46,7 +77,7 @@ ollama pull qwen3.8
 ollama pull nomic-embed-text
 ```
 
-## Easiest way: the app
+### Start the app from source
 
 After installing, double-click:
 
@@ -64,7 +95,7 @@ because the file is not signed. You can also start the app from a terminal with
 The app only listens on your own computer and uses a secret address that
 changes every time you start it.
 
-## Or use the terminal
+### Or use the terminal
 
 **1. Learn who you are.** The tool first shows what it will read and asks for
 permission. Then it opens a report in your browser.
@@ -376,10 +407,46 @@ python3 browse.py chatgpt "ping" --fast
 | Safari history | ✅ (needs Full Disk Access) | – | – |
 | Browser automation | ✅ | ✅ | ✅ |
 | `schedule` | ✅ launchd | prints a cron line | ✅ Task Scheduler |
-| The app (`Start.command` / `Start.bat`) | ✅ | ✅ `python3 app.py` | ✅ |
+| The app from source (`Start.command` / `Start.bat`) | ✅ | ✅ `python3 app.py` | ✅ |
+| Packaged app download | ✅ Apple Silicon | – | ✅ x64 |
 
 It is built and tested on macOS. Linux and Windows should work but are less
 tested.
+
+## The packaged app
+
+The download is `app.py` frozen with [PyInstaller](https://pyinstaller.org),
+together with Python and Playwright. It drives the Chrome you installed, so no
+browser is bundled. It is built by `.github/workflows/release.yml` on GitHub's
+macOS and Windows machines every time a release is published. The build runs
+all three selftests inside the finished app before attaching it.
+
+A few things work differently inside it:
+
+- **No Python and no `.py` files.** The app runs its own parts through itself:
+  `anti-persona --script anti selftest` is the same as `python3 anti.py selftest`.
+  Every button, the daily schedule and the command line use this.
+- **Data lives in a user folder.** The app's own folder is read-only (macOS) or
+  replaced on update, so `out/` and `state/` go to the folder shown on the page.
+  Set `ANTI_HOME` to use a different one.
+- **Models download over Ollama's HTTP API**, so the `ollama` command does not
+  have to be on the PATH, which a Finder-launched app does not have.
+- **Daily runs need a fixed location.** macOS runs an app from Downloads from a
+  random temporary path. The schedule refuses until the app is in Applications.
+- **Safari history** needs Full Disk Access for the app itself: System Settings
+  → Privacy & Security → Full Disk Access → add `anti-persona.app`.
+
+Build it yourself:
+
+```bash
+pip3 install pyinstaller -r requirements.txt
+```
+
+```bash
+pyinstaller --noconfirm --windowed --name anti-persona --hidden-import browse app.py
+```
+
+On Windows, use `--console` instead of `--windowed`.
 
 ## Troubleshooting
 
@@ -403,7 +470,7 @@ tested.
 ## Code layout
 
 ```
-app.py       the click-through app: a local page that runs the commands below
+app.py       the click-through app (and the entry point of the packaged app)
 persona.py   research, summary, persona prompt, report
 anti.py      planning, math, state, commands, scheduling, progress report
 browse.py    the browser; the only file that needs playwright

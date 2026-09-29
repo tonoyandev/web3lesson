@@ -32,7 +32,8 @@ from pathlib import Path
 import persona
 
 ROOT = Path(__file__).resolve().parent
-STATE, OUT = ROOT / "state", ROOT / "out"
+DATA = persona.DATA  # next to the scripts, or a per-user folder in the packaged app
+STATE, OUT = DATA / "state", DATA / "out"
 ROADMAP_F, LOG_F, METRICS_F = STATE / "roadmap.json", STATE / "log.jsonl", STATE / "metrics.jsonl"
 VARIANTS_F = STATE / "variants.json"  # day 2+ wording of each stage, generated once, then fixed
 PROFILE_HISTORY = Path.home() / ".anti/profile/Default/History"
@@ -464,7 +465,7 @@ def cmd_plan(a):
           "days_per_stage": a.days_per_stage or DAYS_PER_STAGE, "approved": None}
     save_roadmap(rm)
     print_plan(rm)
-    print(f"\nsaved {ROADMAP_F.relative_to(ROOT)}; edit it by hand if you like, then: python3 anti.py approve")
+    print(f"\nsaved {ROADMAP_F}; edit it by hand if you like, then: python3 anti.py approve")
     return 0
 
 
@@ -637,6 +638,26 @@ def cmd_metrics(a):
     return 0
 
 
+def cmd_pull(a):
+    """Download a model through Ollama's HTTP API (the packaged app has no ollama CLI on its PATH)."""
+    req = urllib.request.Request(f"{a.host}/api/pull", data=json.dumps({"model": a.model, "stream": True}).encode(),
+                                 headers={"Content-Type": "application/json"})
+    last = None
+    with urllib.request.urlopen(req, timeout=24 * 3600) as r:
+        for line in r:
+            d = json.loads(line or b"{}")
+            if d.get("error"):
+                sys.exit(f"ollama: {d['error']}")
+            msg = d.get("status", "")
+            if d.get("total"):
+                msg = f"{msg} {int(10 * d.get('completed', 0) / d['total']) * 10}%"  # print every 10%
+            if msg != last:
+                print(msg, flush=True)
+                last = msg
+    print(f"{a.model} is ready")
+    return 0
+
+
 def cmd_daily(a):
     """What the scheduler runs: the next open day, then the metrics. A challenge stops the day, not the metrics."""
     a.stage, a.all, a.only, a.dry_run, a.yes, a.fast, a.force, a.judge = None, False, None, False, True, False, False, True
@@ -648,8 +669,8 @@ def cmd_daily(a):
 def plist_for(hh, mm):
     return {
         "Label": "com.anti.run",
-        "ProgramArguments": [sys.executable, str(ROOT / "anti.py"), "daily"],
-        "WorkingDirectory": str(ROOT),
+        "ProgramArguments": persona.script_cmd("anti", "daily"),
+        "WorkingDirectory": str(DATA),
         "StartCalendarInterval": {"Hour": hh, "Minute": mm},
         "StandardOutPath": str(STATE / "launchd.log"),
         "StandardErrorPath": str(STATE / "launchd.log"),
@@ -679,14 +700,17 @@ def cmd_schedule(a):
         rm = load_roadmap()
         if rm.get("approved") != rid(rm):
             sys.exit("approve the roadmap first: python anti.py approve")
-        task = f'"{sys.executable}" "{ROOT / "anti.py"}" daily'
+        task = subprocess.list2cmdline(persona.script_cmd("anti", "daily"))
         subprocess.run(["schtasks", "/Create", "/SC", "DAILY", "/TN", WIN_TASK, "/TR", task, "/ST", f"{hh:02d}:{mm:02d}", "/F"], check=True)
         print(f"runs daily at {hh:02d}:{mm:02d} (Task Scheduler, task '{WIN_TASK}'); stop: python anti.py schedule --remove")
         return 0
     if sys.platform != "darwin":  # ponytail: no systemd timer; Linux users get a cron line
         print("Add this line with `crontab -e`:")
-        print(f'{mm} {hh} * * * "{sys.executable}" "{ROOT / "anti.py"}" daily >> "{STATE / "cron.log"}" 2>&1')
+        cmd = " ".join(f'"{x}"' for x in persona.script_cmd("anti", "daily"))
+        print(f'{mm} {hh} * * * {cmd} >> "{STATE / "cron.log"}" 2>&1')
         return 0
+    if "/AppTranslocation/" in sys.executable:  # macOS runs a quarantined app from a random temporary path
+        sys.exit("Move anti-persona.app to your Applications folder, open it from there, then turn on the daily run.")
     target = f"gui/{os.getuid()}"
     subprocess.run(["launchctl", "bootout", target, str(PLIST)], capture_output=True)
     if a.remove:
@@ -799,7 +823,7 @@ def selftest():
         except SystemExit:
             pass
     pl = plistlib.loads(plistlib.dumps(plist_for(20, 5)))
-    assert pl["StartCalendarInterval"] == {"Hour": 20, "Minute": 5} and pl["ProgramArguments"] == [sys.executable, str(ROOT / "anti.py"), "daily"]  # no shell
+    assert pl["StartCalendarInterval"] == {"Hour": 20, "Minute": 5} and pl["ProgramArguments"] == persona.script_cmd("anti", "daily")  # no shell
     global LOG_F
     keep, LOG_F = LOG_F, Path(tempfile.mkdtemp()) / "log.jsonl"
     try:
@@ -842,6 +866,7 @@ def main():
     p = sub.add_parser("schedule", parents=[common], help="run daily via launchd")
     p.add_argument("--at", default="20:00", help="HH:MM")
     p.add_argument("--remove", action="store_true")
+    sub.add_parser("pull", parents=[common], help="download --model through Ollama")
     sub.add_parser("daily", parents=[common], help="what the scheduler runs: run --yes, then metrics --judge")
     sub.add_parser("selftest")
     a = ap.parse_args()
@@ -853,7 +878,7 @@ def main():
     if a.cmd == "plan" and a.days_per_stage is not None and a.days_per_stage < 1:
         sys.exit("--days-per-stage must be at least 1")
     cmds = {"plan": cmd_plan, "approve": cmd_approve, "login": cmd_login, "run": cmd_run, "metrics": cmd_metrics,
-            "schedule": cmd_schedule, "daily": cmd_daily}
+            "schedule": cmd_schedule, "daily": cmd_daily, "pull": cmd_pull}
     return cmds[a.cmd](a)
 
 

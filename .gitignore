@@ -21,6 +21,11 @@ conversations.json
 .env
 .env.*
 
+# Packaging (PyInstaller)
+build/
+dist/
+*.spec
+
 # Python
 __pycache__/
 *.py[cod]

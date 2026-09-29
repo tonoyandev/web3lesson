@@ -14,6 +14,7 @@ import collections
 import contextlib
 import datetime as dt
 import json
+import os
 import random
 import re
 import shutil
@@ -27,6 +28,31 @@ from urllib.parse import urlparse
 
 HOME = Path.home()
 ROOT = Path(__file__).resolve().parent
+FROZEN = bool(getattr(sys, "frozen", False))  # running inside the packaged app (PyInstaller)
+
+
+def data_dir():
+    """Where out/ and state/ live: next to the scripts, or a per-user folder for the packaged app
+    (its own folder is read-only or temporary). ANTI_HOME overrides both."""
+    if os.environ.get("ANTI_HOME"):
+        return Path(os.environ["ANTI_HOME"]).expanduser()
+    if not FROZEN:
+        return ROOT
+    if sys.platform == "darwin":
+        return HOME / "Library/Application Support/anti-persona"
+    if sys.platform == "win32":
+        return Path(os.environ.get("APPDATA") or HOME) / "anti-persona"
+    return HOME / ".local/share/anti-persona"
+
+
+DATA = data_dir()
+
+
+def script_cmd(name, *args):
+    """How to start one of our scripts: python + file, or the packaged app + --script."""
+    if FROZEN:
+        return [sys.executable, "--script", name, *args]
+    return [sys.executable, str(ROOT / f"{name}.py"), *args]
 CHROME = {
     "darwin": HOME / "Library/Application Support/Google/Chrome/Default/History",
     "linux": HOME / ".config/google-chrome/Default/History",
@@ -423,7 +449,7 @@ def main():
     ap.add_argument("--model", default="qwen3.8:latest")
     ap.add_argument("--host", default="http://localhost:11434")
     ap.add_argument("--lang", default="English", help="language of the generated personas")
-    ap.add_argument("--out", type=Path, default=ROOT / "out", help="output folder (default: out/ next to this script)")
+    ap.add_argument("--out", type=Path, default=DATA / "out", help="output folder (default: out/ in the data folder)")
     ap.add_argument("--chrome-history", type=Path, action="append", default=[],
                     help="extra Chrome History file(s), e.g. a second profile; repeatable")
     ap.add_argument("--no-llm", action="store_true", help="only collect + charts, skip Ollama")
@@ -445,7 +471,7 @@ def main():
     if args.extra:
         summary["chatgpt"] = run("chatgpt export", collect_chatgpt, args.extra)
 
-    args.out.mkdir(exist_ok=True)
+    args.out.mkdir(parents=True, exist_ok=True)
     (args.out / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=1))
 
     llm = {}

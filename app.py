@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 """app.py - a click-through wizard for anti-persona, in your browser.
 
-    python3 app.py                 (or double-click Start.command / Start.bat)
+    python3 app.py                 (or double-click Start.command / Start.bat, or the packaged app)
     python3 app.py --no-browser    print the address instead of opening it
     python3 app.py --selftest
+
+The packaged app is this file frozen with PyInstaller. It has no Python and no
+.py files, so it runs the other scripts through itself:
+    anti-persona --script anti selftest
 
 The page is served on 127.0.0.1 only and every request must carry a token that
 is new on each launch, so other websites and other users of this computer
@@ -31,7 +35,10 @@ import anti
 import persona
 
 ROOT = Path(__file__).resolve().parent
+DATA = persona.DATA
+FROZEN = persona.FROZEN
 TOKEN = secrets.token_urlsafe(24)
+SERVER = None
 CHANNELS = ("google", "youtube", "chatgpt", "claude")
 MODEL_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/-]{0,80}$")
 TIME_RE = re.compile(r"^([01]?\d|2[0-3]):([0-5]\d)$")
@@ -53,11 +60,12 @@ class Job:
         with self.lock:
             if self.running():
                 raise RuntimeError(f"'{self.name}' is still running; wait for it or press Stop")
-            shown = ["python3" if a == sys.executable else a for a in args]
+            shown = [("anti-persona" if FROZEN else "python3") if a == sys.executable else a for a in args]
             self.name, self.code, self.lines = name, None, ["$ " + " ".join(shown)]
             env = {**os.environ, "PYTHONUNBUFFERED": "1", "PYTHONIOENCODING": "utf-8"}
+            DATA.mkdir(parents=True, exist_ok=True)
             self.proc = subprocess.Popen(
-                args, cwd=ROOT, env=env, text=True, encoding="utf-8", errors="replace", bufsize=1,
+                args, cwd=DATA, env=env, text=True, encoding="utf-8", errors="replace", bufsize=1,
                 stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
             )
         if stdin_text is not None:
@@ -115,40 +123,39 @@ def _only(p):
 
 def build(action, p):
     """Button -> argument list. Whitelisted actions, validated values, never a shell."""
-    py = [sys.executable]
+    a, pe = (lambda *x: persona.script_cmd("anti", *x)), (lambda *x: persona.script_cmd("persona", *x))
     if action == "setup":
-        return py + ["-m", "pip", "install", "-r", "requirements.txt"], None
+        if FROZEN:
+            raise ValueError("the packaged app already includes the browser helper")
+        return [sys.executable, "-m", "pip", "install", "-r", str(ROOT / "requirements.txt")], None
     if action == "pull":
-        ollama = shutil.which("ollama")
-        if not ollama:
-            raise ValueError("Ollama is not installed: https://ollama.com/download")
-        return [ollama, "pull", _model(p)], None
+        return a("pull", "--model", _model(p)), None  # Ollama's HTTP API: works without the CLI on PATH
     if action == "research":
-        return py + ["persona.py", "--yes", "--model", _model(p)], None
+        return pe("--yes", "--model", _model(p)), None
     if action == "plan":
-        args = py + ["anti.py", "plan", "--model", _model(p), "--stages", str(_int(p, "stages", 3, 20, 10)),
-                     "--days-per-stage", str(_int(p, "days", 1, 30, anti.DAYS_PER_STAGE))]
+        args = a("plan", "--model", _model(p), "--stages", str(_int(p, "stages", 3, 20, 10)),
+                 "--days-per-stage", str(_int(p, "days", 1, 30, anti.DAYS_PER_STAGE)))
         goal = " ".join(str(p.get("goal") or "").split())[:300]
         return args + (["--goal", goal] if goal else []), None
     if action == "pace":
-        return py + ["anti.py", "plan", "--check", "--days-per-stage", str(_int(p, "days", 1, 30, anti.DAYS_PER_STAGE))], None
+        return a("plan", "--check", "--days-per-stage", str(_int(p, "days", 1, 30, anti.DAYS_PER_STAGE))), None
     if action == "approve":
-        return py + ["anti.py", "approve"], "y"  # the page showed the plan and the notice; the click is the "y"
+        return a("approve"), "y"  # the page showed the plan and the notice; the click is the "y"
     if action == "login":
-        return py + ["anti.py", "login"], None
+        return a("login"), None
     if action == "preview":
-        return py + ["anti.py", "run", "--dry-run"] + _only(p), None
+        return a("run", "--dry-run", *_only(p)), None
     if action == "run":
-        return py + ["anti.py", "run", "--yes", "--model", _model(p)] + _only(p) + (["--force"] if p.get("force") else []), None
+        return a("run", "--yes", "--model", _model(p), *_only(p), *(["--force"] if p.get("force") else [])), None
     if action == "metrics":
-        return py + ["anti.py", "metrics", "--judge", "--model", _model(p)], None
+        return a("metrics", "--judge", "--model", _model(p)), None
     if action == "schedule":
         at = str(p.get("at") or "20:00")
         if not TIME_RE.match(at):
             raise ValueError("time must look like 20:00")
-        return py + ["anti.py", "schedule", "--at", at], None
+        return a("schedule", "--at", at), None
     if action == "unschedule":
-        return py + ["anti.py", "schedule", "--remove"], None
+        return a("schedule", "--remove"), None
     raise ValueError(f"unknown action {action!r}")
 
 
@@ -196,7 +203,8 @@ def status():
         "python": sys.version.split()[0],
         "playwright": importlib.util.find_spec("playwright") is not None,
         "chrome": chrome_found(),
-        "ollama_cli": shutil.which("ollama") is not None,
+        "frozen": FROZEN,
+        "data": str(DATA),
         "ollama": models is not None,
         "models": models or [],
         "default_model": anti.MODEL,
@@ -286,6 +294,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 JOB.send("")  # only ever "press Enter" (login finished)
             elif path == "/api/stop":
                 JOB.stop()
+            elif path == "/api/quit":
+                JOB.stop()
+                threading.Thread(target=SERVER.shutdown, daemon=True).start()
             else:
                 return self._send(404, {"error": "not found"})
             return self._send(200, {"ok": True})
@@ -294,10 +305,12 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
 
 def serve(port, open_browser):
+    global SERVER
     try:
         srv = http.server.ThreadingHTTPServer(("127.0.0.1", port), Handler)
     except OSError:
         srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)  # port busy: take any free one
+    SERVER = srv
     url = f"http://127.0.0.1:{srv.server_address[1]}/?t={TOKEN}"
     print(f"anti-persona is running at\n  {url}\nKeep this window open. Close it (or press Ctrl+C) to quit.", flush=True)
     if open_browser:
@@ -341,8 +354,9 @@ table{width:100%;border-collapse:collapse;font-size:14px;margin-top:8px}td,th{pa
 #logbox button{padding:3px 10px;font-size:12px;background:#20242d;color:#fff;border-color:#333}
 a{color:var(--acc)}
 </style></head><body><main>
-<h1>anti-persona</h1>
+<div class="head"><h1>anti-persona</h1><button id="quit" style="margin-left:auto">Quit</button></div>
 <div class="mut">Go step by step. Each button runs one command; you can see it and its output at the bottom.</div>
+<div class="note" id="datanote"></div>
 
 <section class="card"><div class="head"><div class="num">0</div><h2>Get ready</h2><span class="badge" id="b0"></span></div>
 <div class="body"><ul class="checks" id="checks"></ul>
@@ -422,6 +436,7 @@ document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>window.open('/
 $('loggedin').onclick=()=>api('/api/input',{});
 $('stop').onclick=()=>api('/api/stop',{});
 $('clear').onclick=()=>{$('log').textContent=''};
+$('quit').onclick=async()=>{if(running&&!confirm('A command is still running. Stop it and quit?'))return;await api('/api/quit',{});document.body.innerHTML='<main><h1>anti-persona has stopped.</h1><p class="mut">You can close this tab.</p></main>'};
 ['consent','understood'].forEach(id=>$(id).onchange=()=>render());
 
 async function poll(){
@@ -440,10 +455,10 @@ function render(){
  const models=S.models,hasModel=m=>models.some(x=>x===m||x===m+':latest'||x.split(':')[0]===m.split(':')[0]&&m.indexOf(':')<0);
  const ready=S.playwright&&S.chrome&&S.ollama&&hasModel($('model').value||S.default_model)&&hasModel(S.embed_model);
  $('checks').innerHTML=
-  chk(true,'Python '+e(S.python))+
-  chk(S.playwright,'Browser helper (Playwright)',S.playwright?'':'<button data-act2="setup">Install</button>')+
+  chk(true,S.frozen?'App (Python '+e(S.python)+' built in)':'Python '+e(S.python))+
+  chk(S.playwright,'Browser helper (Playwright)',S.playwright||S.frozen?'':'<button data-act2="setup">Install</button>')+
   chk(S.chrome,'Google Chrome',S.chrome?'':'<a href="https://www.google.com/chrome/" target="_blank" rel="noopener">Download Chrome</a>')+
-  chk(S.ollama,'Ollama is running',S.ollama?'':(S.ollama_cli?'<span class="mut">open the Ollama app</span>':'<a href="https://ollama.com/download" target="_blank" rel="noopener">Download Ollama</a>'))+
+  chk(S.ollama,'Ollama is running',S.ollama?'':'<span class="mut">open the Ollama app, or</span> <a href="https://ollama.com/download" target="_blank" rel="noopener">download Ollama</a>')+
   (S.ollama?chk(hasModel($('model').value||S.default_model),'Model '+e($('model').value||S.default_model),hasModel($('model').value||S.default_model)?'':'<button data-act2="pull" data-m="'+e($('model').value||S.default_model)+'">Download</button>'):'')+
   (S.ollama?chk(hasModel(S.embed_model),'Embedding model '+e(S.embed_model),hasModel(S.embed_model)?'':'<button data-act2="pull" data-m="'+e(S.embed_model)+'">Download</button>'):'');
  document.querySelectorAll('[data-act2]').forEach(b=>{b.disabled=busy;b.onclick=async()=>{const p=params(b.dataset.act2);if(b.dataset.m)p.model=b.dataset.m;const r=await api('/api/start',p);if(r.error)alert(r.error);else{since=0;$('log').textContent='';poll()}}});
@@ -481,7 +496,7 @@ function render(){
 }
 
 async function refresh(){
- S=await api('/api/status');
+ S=await api('/api/status');$('datanote').textContent='Your data is kept in '+S.data;
  const sel=$('model'),cur=sel.value||S.default_model,opts=[...new Set([S.default_model,'qwen3:14b','qwen3:8b',...S.models.filter(m=>!m.startsWith(S.embed_model))])];
  sel.innerHTML=opts.map(m=>`<option ${m===cur?'selected':''}>${e(m)}</option>`).join('');sel.onchange=render;
  render();
@@ -528,23 +543,52 @@ def selftest():
     assert not ok(Fake("127.0.0.1:8765"), "wrong") and not ok(Fake("127.0.0.1:8765"), None)
     assert not ok(Fake("evil.example:8765"), TOKEN)  # DNS rebinding
     j = Job()
-    j.start("echo", [sys.executable, "-c", "print(input())"], "hello")
+    if FROZEN:  # no "python -c" inside the app: exercise the --script dispatch instead
+        j.start("dispatch", persona.script_cmd("persona", "--selftest"))
+    else:
+        j.start("echo", [sys.executable, "-c", "print(input())"], "hello")
     j.proc.wait()
     for _ in range(50):
         if j.code is not None:
             break
         threading.Event().wait(0.05)
-    assert "hello" in j.lines and j.code == 0, j.lines
+    assert ("selftest ok" if FROZEN else "hello") in j.lines and j.code == 0, j.lines
+    assert build("research", {})[0][:len(persona.script_cmd("persona"))] == persona.script_cmd("persona")
     print("selftest ok")
     return 0
 
 
+def dispatch(argv):
+    """`anti-persona --script NAME ...` runs one of our scripts inside the packaged app."""
+    name, rest = argv[2], argv[3:]
+    if name not in ("persona", "anti", "browse"):
+        sys.exit(f"unknown script {name!r}")
+    sys.argv = [f"{name}.py", *rest]
+    if name == "browse":
+        import browse
+
+        return browse.main()
+    return {"persona": persona, "anti": anti}[name].main()
+
+
+def ensure_streams():
+    """A windowed app may start with no stdout/stderr; print() would then crash."""
+    if sys.stdout is None or sys.stderr is None:
+        DATA.mkdir(parents=True, exist_ok=True)
+        log = open(DATA / "app.log", "a", encoding="utf-8", buffering=1)  # noqa: SIM115 - lives as long as the app
+        sys.stdout = sys.stdout or log
+        sys.stderr = sys.stderr or log
+
+
 def main():
+    ensure_streams()
+    if len(sys.argv) > 2 and sys.argv[1] == "--script":
+        return dispatch(sys.argv)
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--port", type=int, default=8765)
     ap.add_argument("--no-browser", action="store_true")
     ap.add_argument("--selftest", action="store_true")
-    a = ap.parse_args()
+    a, _ = ap.parse_known_args()  # macOS may add its own arguments when an .app is opened
     if a.selftest:
         return selftest()
     serve(a.port, not a.no_browser)

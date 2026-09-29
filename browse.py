@@ -201,7 +201,7 @@ CHANNELS = {
     "claude": lambda page, text, fast=False: chat(page, "claude", text, fast),
 }
 
-if __name__ == "__main__":
+def main():
     args = [x for x in sys.argv[1:] if x != "--fast"]
     if len(args) != 2 or args[0] not in CHANNELS:
         sys.exit(__doc__)
@@ -210,3 +210,8 @@ if __name__ == "__main__":
             print(json.dumps(CHANNELS[args[0]](page, args[1], "--fast" in sys.argv), ensure_ascii=False, indent=1))
     except (Challenge, Busy) as e:
         sys.exit(f"{type(e).__name__.lower()}: {e}")
+    return 0
+
+
+if __name__ == "__main__":
+    main()
